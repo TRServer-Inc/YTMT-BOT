@@ -2,6 +2,7 @@ const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js'
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
+require('./server.js');
 require('dotenv').config();
 
 // --- 1. BOT KURULUMU VE INTENTLER ---
