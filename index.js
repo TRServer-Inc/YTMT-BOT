@@ -318,29 +318,31 @@ client.on('guildMemberRemove', async (member) => {
     }
 });
 
-// --- 8. BOT GİRİŞ VE DİNAMİK DURUM (ACTIVITY) AYARI ---
+// --- 8. BOT GİRİŞ VE DİNAMİK DURUM (PRESENCE) AYARI ---
 client.once('clientReady', () => {
     console.log(`\n==================================================`);
     console.log(`[BOT AKTİF] ${client.user.tag} başarıyla başlatıldı!`);
     console.log(`==================================================\n`);
 
-    // Değişen durum listesi (İstediğin gibi ekleyip çıkarabilirsin)
     const durumlar = [
-        { name: 'DM\'den gelen soruları 🎧', type: ActivityType.Listening },
-        { name: 'Minecraft & Roblox 🎮', type: ActivityType.Playing },
-        { name: 'Sunucudaki sohbeti 👁️', type: ActivityType.Watching },
-        { name: 'y!yardım komutunu 📜', type: ActivityType.Listening }
+        { name: 'DM\'den gelen soruları', type: ActivityType.Listening },
+        { name: 'Minecraft & Roblox', type: ActivityType.Playing },
+        { name: 'Sunucudaki sohbeti', type: ActivityType.Watching }
     ];
 
     let index = 0;
-    // İlk açılışta hemen durum ayarla
-    client.user.setActivity(durumlar[0].name, { type: durumlar[0].type });
 
-    // Her 10 saniyede bir sırayla değiştir
-    setInterval(() => {
+    const durumuGuncelle = () => {
+        const mevcut = durumlar[index];
+        client.user.setPresence({
+            activities: [{ name: mevcut.name, type: mevcut.type }],
+            status: 'online'
+        });
         index = (index + 1) % durumlar.length;
-        client.user.setActivity(durumlar[index].name, { type: durumlar[index].type });
-    }, 10000);
+    };
+
+    durumuGuncelle();
+    setInterval(durumuGuncelle, 10000);
 });
 
 client.login(process.env.TOKEN);
