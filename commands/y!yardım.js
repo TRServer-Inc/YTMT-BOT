@@ -4,7 +4,7 @@ module.exports = {
     async execute(message, args, client) {
         const yardimEmbed = {
             color: 0x3498db,
-            title: '🤖 ErensiBot | Komut Menüsü',
+            title: '🤖 YTMTBot | Komut Menüsü',
             description: 'Aşağıda sunucuda kullanabileceğin tüm güncel komutlar kategorilere ayrılmış olarak listelenmiştir, kanka!',
             thumbnail: { url: client.user.displayAvatarURL({ dynamic: true }) },
             fields: [
