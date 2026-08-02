@@ -12,7 +12,8 @@ const client = new Client({
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.DirectMessages
+        GatewayIntentBits.DirectMessages,
+        GatewayIntentBits.GuildPresences // 👈 Aktivitenin sunucu listesinde görünmesi için şart!
     ],
     partials: [Partials.Channel]
 });
