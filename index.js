@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, Collection, ActivityType } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
@@ -53,8 +53,7 @@ if (fs.existsSync(commandsPath)) {
 // --- YAPAY ZEKA SORGULAMA FONKSİYONU ---
 async function geminiCevapAl(soru) {
     const apiKey = process.env.GEMINI_API_KEY;
-    // 404 yememek için tam stabil model ismi
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
 
     const bodyPayload = {
         system_instruction: {
@@ -319,11 +318,29 @@ client.on('guildMemberRemove', async (member) => {
     }
 });
 
-// Bot Giriş Kontrolü (Konsoldaki deprication uyarısını çözer)
+// --- 8. BOT GİRİŞ VE DİNAMİK DURUM (ACTIVITY) AYARI ---
 client.once('clientReady', () => {
     console.log(`\n==================================================`);
     console.log(`[BOT AKTİF] ${client.user.tag} başarıyla başlatıldı!`);
     console.log(`==================================================\n`);
+
+    // Değişen durum listesi (İstediğin gibi ekleyip çıkarabilirsin)
+    const durumlar = [
+        { name: 'DM\'den gelen soruları 🎧', type: ActivityType.Listening },
+        { name: 'Minecraft & Roblox 🎮', type: ActivityType.Playing },
+        { name: 'Sunucudaki sohbeti 👁️', type: ActivityType.Watching },
+        { name: 'y!yardım komutunu 📜', type: ActivityType.Listening }
+    ];
+
+    let index = 0;
+    // İlk açılışta hemen durum ayarla
+    client.user.setActivity(durumlar[0].name, { type: durumlar[0].type });
+
+    // Her 10 saniyede bir sırayla değiştir
+    setInterval(() => {
+        index = (index + 1) % durumlar.length;
+        client.user.setActivity(durumlar[index].name, { type: durumlar[index].type });
+    }, 10000);
 });
 
 client.login(process.env.TOKEN);
