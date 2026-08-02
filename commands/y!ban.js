@@ -2,26 +2,55 @@ const { PermissionFlagsBits } = require('discord.js');
 
 module.exports = {
     name: 'ban',
-    description: 'belirtilen üyeyi sunucudan yasaklar.',
+    description: 'Kullanıcıya Banlanmış rolü verir ve sunucudaki kanallara erişimini keser.',
     async execute(message, args, client) {
         if (!message.member.permissions.has(PermissionFlagsBits.BanMembers)) {
-            return message.reply('Bu komutu kullanmak için `Üyeleri Yasakla` yetkisine sahip olmalısın.');
+            return message.reply('❌ bu komutu kullanmak için **üyeleri banla** yetkisine sahip olmalısın!');
         }
 
-        const kurban = message.mentions.members.first();
-        if (!kurban) return message.reply('Lütfen sunucudan yasaklamak istediğin üyeyi etiketle.');
+        const hedef = message.mentions.members.first() || message.guild.members.cache.get(args[0]);
+        if (!hedef) {
+            return message.reply('kanka kimi banlayacağımı belirtmedin! Örnek: `y!ban @kullanıcı [sebep]`');
+        }
 
-        if (kurban.id === message.guild.ownerId) return message.reply('Sunucu sahibini yasaklayamazsın.');
-        if (!kurban.bannable) return message.reply('Bu üyeyi yasaklamaya yetkim yetmiyor.');
+        if (hedef.id === message.author.id) {
+            return message.reply('kendini banlayamazsın kanka 😅');
+        }
 
-        const sebep = args.slice(1).join(' ') || 'Belirtilmedi';
+        if (hedef.roles.highest.position >= message.member.roles.highest.position) {
+            return message.reply('bu kullanıcının rolü senden yüksek veya seninle aynı seviyede, banlayamazsın!');
+        }
+
+        const sebep = args.slice(1).join(' ') || 'Sebep belirtilmedi.';
+        const banRolu = message.guild.roles.cache.find(r => r.name === 'Banlanmış');
+
+        if (!banRolu) {
+            return message.reply('❌ **Banlanmış** rolü bulunamadı! Lütfen önce `y!ban-kurulum` komutunu çalıştırın.');
+        }
 
         try {
-            await kurban.ban({ reason: sebep });
-            return message.reply(`🚫 **${kurban.user.tag}** sunucudan yasaklandı. \n**Sebep:** ${sebep}`);
+            await hedef.roles.add(banRolu);
+
+            const banEmbed = {
+                color: 0xe74c3c,
+                title: '🚫 Kullanıcı Kısıtlandı (Rol Banı)',
+                description: `${hedef} kullanıcısına **Banlanmış** rolü verildi ve kanalları gizlendi!`,
+                fields: [
+                    { name: '👤 Banlanan:', value: `${hedef.user.tag}`, inline: true },
+                    { name: '🛡️ Yetkili:', value: `${message.author.tag}`, inline: true },
+                    { name: '📄 Sebep:', value: sebep }
+                ],
+                timestamp: new Date()
+            };
+
+            // Kullanıcıya DM üzerinden bilgi ver
+            await hedef.send(`⚠️ **${message.guild.name}** sunucusunda kısıtlandın (Banlandın).\n**Sebep:** ${sebep}`).catch(() => {});
+
+            return message.channel.send({ embeds: [banEmbed] });
+
         } catch (error) {
-            console.error(error);
-            return message.reply('Üye yasaklanırken bir hata oluştu.');
+            console.error('Ban hatası:', error);
+            return message.reply('Kullanıcıya rol verilirken bir hata oluştu! Botun rol sırasını kontrol et kanka.');
         }
     }
 };
