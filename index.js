@@ -53,7 +53,8 @@ if (fs.existsSync(commandsPath)) {
 // --- YAPAY ZEKA SORGULAMA FONKSİYONU ---
 async function geminiCevapAl(soru) {
     const apiKey = process.env.GEMINI_API_KEY;
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // 404 yememek için tam stabil model ismi
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
 
     const bodyPayload = {
         system_instruction: {
@@ -318,8 +319,8 @@ client.on('guildMemberRemove', async (member) => {
     }
 });
 
-// Bot Giriş Kontrolü
-client.once('ready', () => {
+// Bot Giriş Kontrolü (Konsoldaki deprication uyarısını çözer)
+client.once('clientReady', () => {
     console.log(`\n==================================================`);
     console.log(`[BOT AKTİF] ${client.user.tag} başarıyla başlatıldı!`);
     console.log(`==================================================\n`);
