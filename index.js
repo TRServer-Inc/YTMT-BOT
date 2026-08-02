@@ -53,16 +53,18 @@ if (fs.existsSync(commandsPath)) {
 // --- YAPAY ZEKA SORGULAMA FONKSİYONU ---
 async function geminiCevapAl(soru) {
     const apiKey = process.env.GEMINI_API_KEY;
-    // 1.5-flash sürümüne çekerek kotayı daha rahat yönetiyoruz
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-    const promptSistemi = "Sen cana yakın, esprili, Roblox ve Minecraft oyunlarını çok iyi bilen fırlama bir Discord botusun. Lafı uzatmadan, kendini tekrar etmeden direkt olarak net, emojili ve kısa bir cevap ver.";
-
     const bodyPayload = {
+        system_instruction: {
+            parts: [
+                { text: "Sen cana yakın, esprili, Roblox ve Minecraft oyunlarını çok iyi bilen fırlama bir Discord botusun. Lafı uzatmadan, kendini tekrar etmeden direkt olarak net, emojili ve kısa bir cevap ver." }
+            ]
+        },
         contents: [
             {
                 role: "user",
-                parts: [{ text: `${promptSistemi}\n\nKullanıcı Sorusu: ${soru}` }]
+                parts: [{ text: soru }]
             }
         ]
     };
@@ -317,7 +319,7 @@ client.on('guildMemberRemove', async (member) => {
 });
 
 // Bot Giriş Kontrolü
-client.once('clientReady', () => {
+client.once('ready', () => {
     console.log(`\n==================================================`);
     console.log(`[BOT AKTİF] ${client.user.tag} başarıyla başlatıldı!`);
     console.log(`==================================================\n`);
