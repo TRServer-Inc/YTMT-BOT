@@ -54,7 +54,7 @@ if (fs.existsSync(commandsPath)) {
 async function geminiCevapAl(soru) {
     const apiKey = process.env.GEMINI_API_KEY;
     // 404 yememek için tam stabil model ismi
-    const url = `ttps://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
     const bodyPayload = {
         system_instruction: {
