@@ -110,10 +110,10 @@ client.on('messageCreate', async (message) => {
             }
         } catch (error) {
             if (error.response && error.response.status === 429) {
-                return message.reply('kanka api biraz yoruldu, 15-20 saniye soluklanıp öyle yaz! 😅');
+                return message.reply('Kanka yapay zeka azıcık beklemeni söylüyor, daha sonra yaz!');
             }
             console.error('DM Yapay Zeka Hatası:', error.message);
-            return message.reply('API bağlantısında ufak bir takılma oldu kanka, bir daha yazsana!');
+            return message.reply('Kanka kafam karıştı, daha sonra yazar mısın?');
         }
     }
 
