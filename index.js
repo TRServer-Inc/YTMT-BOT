@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Partials, Collection, ActivityType } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
@@ -19,35 +19,57 @@ const client = new Client({
 });
 
 client.commands = new Collection();
-const aiCooldowns = new Map(); // Yapay zeka bekleme süresi takibi için
+const aiCooldowns = new Map(); // Yapay Zeka Cooldown (Spam Engelleme)
 
-// --- 2. AYAR DOSYALARI VE HAFIZA HAZIRLIĞI ---
+// --- 2. AYAR DOSYALARI VE KÜFÜR LİSTESİ HAZIRLIĞI ---
 const kufurlerPath = path.join(process.cwd(), 'kufurler.json');
 let kufurlerListesi = [];
 
 try {
     if (fs.existsSync(kufurlerPath)) {
         kufurlerListesi = JSON.parse(fs.readFileSync(kufurlerPath, 'utf8'));
-        console.log('[SİSTEM] Küfür listesi hafızaya yüklendi.');
+        console.log('[SİSTEM] Küfür listesi başarıyla hafızaya yüklendi.');
+    } else {
+        console.log('[SİSTEM] kufurler.json bulunamadı, boş liste başlatılıyor.');
     }
 } catch (e) {
-    console.error('[HATA] kufurler.json okuma hatası:', e);
+    console.error('[HATA] kufurler.json okunurken bir sorun oluştu:', e);
 }
 
 const hgbbConfigPath = path.join(process.cwd(), 'hgbb-config.json');
 const linkEngelConfigPath = path.join(process.cwd(), 'linkengel-config.json');
 
-// --- 3. KOMUT YÜKLEYİCİ ---
+// --- 3. KOMUT YÜKLEYİCİ (MODÜLER) ---
 const commandsPath = path.join(__dirname, 'commands');
 if (fs.existsSync(commandsPath)) {
     const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
     for (const file of commandFiles) {
         const filePath = path.join(commandsPath, file);
         const command = require(filePath);
-        if ('execute' in command) {
+        if (command.name && typeof command.execute === 'function') {
             client.commands.set(command.name, command);
             console.log(`[KOMUT YÜKLENDİ] ${command.name}`);
+        } else {
+            console.log(`[UYARI] ${file} geçerli bir komut yapısına sahip değil.`);
         }
+    }
+}
+
+// --- 4. EVENT YÜKLEYİCİ (MODÜLER) ---
+const eventsPath = path.join(__dirname, 'events');
+if (fs.existsSync(eventsPath)) {
+    const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
+    for (const file of eventFiles) {
+        const filePath = path.join(eventsPath, file);
+        const event = require(filePath);
+        const eventName = file.split('.')[0];
+        
+        if (event.once) {
+            client.once(eventName, (...args) => event.execute(...args, client));
+        } else {
+            client.on(eventName, (...args) => event.execute(...args, client));
+        }
+        console.log(`[EVENT YÜKLENDİ] ${eventName}`);
     }
 }
 
@@ -59,7 +81,7 @@ async function geminiCevapAl(soru) {
     const bodyPayload = {
         system_instruction: {
             parts: [
-                { text: "Sen cana yakın, esprili, Roblox ve Minecraft oyunlarını çok iyi bilen fırlama bir Discord botusun. Lafı uzatmadan, kendini tekrar etmeden direkt olarak net, emojili ve kısa bir cevap ver. Her zaman küçük harflerle yaz." }
+                { text: "sen cana yakın, esprili, roblox ve minecraft oyunlarını çok iyi bilen fırlama bir discord botusun. lafı uzatmadan, kendini tekrar etmeden direkt olarak net, emojili ve kısa bir cevap ver. her zaman küçük harflerle yaz." }
             ]
         },
         contents: [
@@ -71,23 +93,27 @@ async function geminiCevapAl(soru) {
     };
 
     const response = await axios.post(url, bodyPayload, {
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json'
+        },
         timeout: 15000
     });
 
     return response.data;
 }
 
-// --- 4. MERKEZÎ MESAJ DİNLEYİCİSİ ---
+// --- 5. MERKEZÎ MESAJ DİNLEYİCİSİ VE SİSTEMLER ---
 client.on('messageCreate', async (message) => {
+    // Botların kendi mesajlarını ve boş mesajları yoksay
     if (message.author.bot) return;
 
     const hamMesaj = message.content ? message.content.trim() : "";
     if (!hamMesaj) return;
 
-    // --- ÖZEL BÖLÜM: DM YAPAY ZEKA ---
+    // ==========================================
+    // SİSTEM 0: DM İÇİ YAPAY ZEKA SOHBETİ
+    // ==========================================
     if (!message.guild) {
-        // Cooldown kontrolü
         const simdi = Date.now();
         const sonKullanim = aiCooldowns.get(message.author.id) || 0;
         if (simdi - sonKullanim < 4000) {
@@ -106,31 +132,38 @@ client.on('messageCreate', async (message) => {
                 }
                 return message.reply(cevap);
             } else {
-                return message.reply('Şu an cevabı tam toparlayamadım kanka, tekrar sorar mısın? 🤔');
+                return message.reply('şu an cevabı tam toparlayamadım kanka, tekrar sorar mısın? 🤔');
             }
         } catch (error) {
             if (error.response && error.response.status === 429) {
-                return message.reply('Kanka yapay zeka azıcık beklemeni söylüyor, daha sonra yaz!');
+                return message.reply('kanka yapay zeka azıcık beklemeni söylüyor, daha sonra yaz!');
             }
             console.error('DM Yapay Zeka Hatası:', error.message);
-            return message.reply('Kanka kafam karıştı, daha sonra yazar mısın?');
+            return message.reply('kanka kafam karıştı, daha sonra yazar mısın?');
         }
     }
 
-    // --- SUNUCU İÇİ İŞLEMLER ---
+    // ==========================================
+    // SUNUCU İÇİ İŞLEMLER VE KONTROLLER
+    // ==========================================
     const temizMetin = hamMesaj.replace(/I/g, 'i').replace(/İ/g, 'i').toLowerCase();
 
-    // SİSTEM A: "sa" Selam Sistemi
+    // ==========================================
+    // SİSTEM A: SELAMLAMA ("SA") TESPİTİ
+    // ==========================================
     if (temizMetin === 'sa' || temizMetin === 's.a' || temizMetin === 'selamun aleyküm' || temizMetin === 'selamün aleyküm') {
         return message.reply('Aleyküm Selam, hoş geldin!');
     }
 
-    // SİSTEM B: LINK / REKLAM ENGELLEYİCİ
+    // ==========================================
+    // SİSTEM B: REKLAM / LINK ENGELLEYİCİ
+    // ==========================================
     if (fs.existsSync(linkEngelConfigPath)) {
         try {
             const linkConfig = JSON.parse(fs.readFileSync(linkEngelConfigPath, 'utf8'));
             const sistemAcikMi = linkConfig[message.guild.id];
 
+            // Kullanıcı yönetici yetkisine sahip mi kontrol et
             const yoneticiMi = message.member && message.member.permissions.has('Administrator');
 
             if (sistemAcikMi && !yoneticiMi) {
@@ -148,60 +181,80 @@ client.on('messageCreate', async (message) => {
         }
     }
 
-    // SİSTEM C: Küfür Engelleyici
+    // ==========================================
+    // SİSTEM C: KÜFÜR VE ARGO ENGELLEYİCİ
+    // ==========================================
     const kelimeler = temizMetin.split(/\s+/);
     const duzlesmisMesaj = temizMetin.replace(/[^a-zA-Z0-9ğüşöçıİĞÜŞÖÇ]/g, '');
 
     const iceriyorMu = kufurlerListesi.some(kufur => {
         const temizKufur = kufur.toLowerCase().trim();
         if (!temizKufur) return false;
+        
         return kelimeler.includes(temizKufur) || (temizKufur.length > 3 && (temizMetin.includes(temizKufur) || duzlesmisMesaj.includes(temizKufur)));
     });
 
     if (iceriyorMu) {
         try {
             await message.delete().catch(() => {});
+            
             const rastgeleRenk = Math.floor(Math.random() * 16777215);
             const uyariEmbed = {
                 color: rastgeleRenk,
                 title: '🚫 Küfür Yasak!',
                 description: `${message.author}, bu sunucuda küfür veya argo kullanımı yasaktır!`,
-                thumbnail: { url: 'https://cdn.discordapp.com/emojis/776713577452273706.png?v=1' },
-                footer: { text: `${message.author.username} uyarıldı.`, icon_url: message.author.displayAvatarURL({ dynamic: true }) },
+                thumbnail: {
+                    url: 'https://cdn.discordapp.com/emojis/776713577452273706.png?v=1'
+                },
+                footer: {
+                    text: `${message.author.username} uyarıldı.`,
+                    icon_url: message.author.displayAvatarURL({ dynamic: true })
+                },
                 timestamp: new Date().toISOString()
             };
-            const uyariMesaji = await message.channel.send({ embeds: [uyariEmbed], allowedMentions: { repliedUser: false } });
-            setTimeout(() => { uyariMesaji.delete().catch(() => {}); }, 5000);
+
+            const uyariMesaji = await message.channel.send({
+                embeds: [uyariEmbed],
+                allowedMentions: { repliedUser: false }
+            });
+
+            setTimeout(() => {
+                uyariMesaji.delete().catch(() => {});
+            }, 5000);
+
             return;
         } catch (error) {
             console.error('Mesaj silme yetki hatası:', error);
         }
     }
 
-    // SİSTEM D: Normal Komutlar
+    // ==========================================
+    // SİSTEM D: "y!" ÖN TAKILI KOMUT ALGILAYICI
+    // ==========================================
     if (hamMesaj.toLowerCase().startsWith('y!')) {
-        const args = hamMesaj.slice(2).trim().split(/ +/);
-        const commandName = args.shift().toLowerCase();
+        const args = hamMesaj.split(/ +/);
+        const commandName = args[0].toLowerCase();
 
         const command = client.commands.get(commandName);
         if (command && typeof command.execute === 'function') {
             try {
-                return await command.execute(message, args, client);
+                return await command.execute(message, args.slice(1), client);
             } catch (error) {
-                console.error(`${commandName} çalışırken hata:`, error);
-                return message.reply('Komut çalıştırılırken bir hata oluştu!');
+                console.error(`${commandName} çalıştırılırken bir hata oluştu:`, error);
+                return message.reply('komut çalıştırılırken sunucuda bir hata meydana geldi!');
             }
         }
     }
 
-    // SİSTEM E: SUNUCU İÇİ ETİKET/YANIT YAPAY ZEKA
+    // ==========================================
+    // SİSTEM E: BOTU ETİKETLEME VEYA YANITLAMA (YAPAY ZEKA)
+    // ==========================================
     const botEtiketlendiMi = message.mentions.has(client.user) && !message.mentions.everyone;
     const botaYanitVerildiMi = message.reference && message.referencedMessage && message.referencedMessage.author.id === client.user.id;
 
     if (botEtiketlendiMi || botaYanitVerildiMi) {
         if (hamMesaj.toLowerCase().startsWith('y!')) return;
 
-        // Cooldown kontrolü
         const simdi = Date.now();
         const sonKullanim = aiCooldowns.get(message.author.id) || 0;
         if (simdi - sonKullanim < 4000) {
@@ -210,9 +263,13 @@ client.on('messageCreate', async (message) => {
         aiCooldowns.set(message.author.id, simdi);
 
         try {
-            const soru = message.content.replace(/<@!?\d+>/g, '').replace(/<a?:\w+:\d+>/g, '').trim();
+            const soru = message.content
+                .replace(/<@!?\d+>/g, '')
+                .replace(/<a?:\w+:\d+>/g, '')
+                .trim();
+
             if (!soru) {
-                return message.reply('Efendim? Benimle konuşmak için bir şeyler yazabilirsin!');
+                return message.reply('efendim? benimle konuşmak için bir şeyler yazabilirsin!');
             }
 
             await message.channel.sendTyping();
@@ -225,7 +282,7 @@ client.on('messageCreate', async (message) => {
                 }
                 return message.reply(cevap);
             } else {
-                return message.reply('Şu an cevabı tam toparlayamadım kanka, tekrar sorar mısın? 🤔');
+                return message.reply('şu an cevabı tam toparlayamadım kanka, tekrar sorar mısın? 🤔');
             }
 
         } catch (error) {
@@ -233,118 +290,10 @@ client.on('messageCreate', async (message) => {
                 return message.reply('kanka api biraz yoruldu, 15-20 saniye soluklanıp öyle yaz! 😅');
             }
             console.error('Yapay Zeka Hatası Detayı:', error.message);
-            return message.reply('API bağlantısında ufak bir takılma oldu kanka, bir daha yazsana!');
+            return message.reply('api bağlantısında ufak bir takılma oldu kanka, bir daha yazsana!');
         }
     }
 });
 
-// --- 5. KURAL KABUL BUTON DİNLEYİCİSİ ---
-client.on('interactionCreate', async (interaction) => {
-    if (!interaction.isButton()) return;
-
-    if (interaction.customId === 'kural_kabul') {
-        const uyeRolu = interaction.guild.roles.cache.find(role => role.name.toLowerCase() === 'üye' || role.name.toLowerCase() === 'uye');
-        
-        if (uyeRolu) {
-            try {
-                await interaction.member.roles.add(uyeRolu);
-                return interaction.reply({ 
-                    content: '🎉 **Kuralları başarıyla kabul ettiniz!** Sunucumuza hoş geldiniz, keyifli vakit geçirmeniz dileğiyle!', 
-                    ephemeral: true 
-                });
-            } catch (err) {
-                console.error('Rol verme hatası:', err);
-                return interaction.reply({ 
-                    content: '❌ Rol verilirken bir hata oluştu, lütfen yetkililere bildirin!', 
-                    ephemeral: true 
-                });
-            }
-        } else {
-            return interaction.reply({ 
-                content: '🎉 **Kuralları başarıyla kabul ettiniz!** (Not: Sunucuda "Üye" adında bir rol bulunamadı.)', 
-                ephemeral: true 
-            });
-        }
-    }
-});
-
-// --- 6. HOŞ GELDİN MESAJI (GİRİŞ) ---
-client.on('guildMemberAdd', async (member) => {
-    console.log(`[GİRİŞ BİLDİRİMİ] ${member.user.tag} sunucuya katıldı.`);
-    if (!fs.existsSync(hgbbConfigPath)) return;
-    try {
-        const config = JSON.parse(fs.readFileSync(hgbbConfigPath, 'utf8'));
-        const kanalId = config[member.guild.id];
-        if (!kanalId) return;
-
-        const kanal = await member.guild.channels.fetch(kanalId).catch(() => null);
-        if (!kanal) return;
-
-        const hgEmbed = {
-            color: 0x2ecc71,
-            title: '🎉 Aramıza Biri Katıldı!',
-            description: `Hoş geldin ${member}! Seninle birlikte **${member.guild.memberCount}** kişi olduk. 🚀`,
-            thumbnail: { url: member.user.displayAvatarURL({ dynamic: true }) },
-            timestamp: new Date().toISOString()
-        };
-
-        await kanal.send({ embeds: [hgEmbed] });
-    } catch (e) {
-        console.error('hg mesajı gönderme hatası:', e);
-    }
-});
-
-// --- 7. BAY BAY MESAJI (ÇIKIŞ) ---
-client.on('guildMemberRemove', async (member) => {
-    console.log(`[ÇIKIŞ BİLDİRİMİ] ${member.user.tag} sunucudan ayrıldı.`);
-    if (!fs.existsSync(hgbbConfigPath)) return;
-    try {
-        const config = JSON.parse(fs.readFileSync(hgbbConfigPath, 'utf8'));
-        const kanalId = config[member.guild.id];
-        if (!kanalId) return;
-
-        const kanal = await member.guild.channels.fetch(kanalId).catch(() => null);
-        if (!kanal) return;
-
-        const bbEmbed = {
-            color: 0xe74c3c,
-            title: '👋 Biri Aramızdan Ayrıldı...',
-            description: `Görüşürüz **${member.user.username}**! Toplam **${member.guild.memberCount}** kişi kaldık. 😢`,
-            thumbnail: { url: member.user.displayAvatarURL({ dynamic: true }) },
-            timestamp: new Date().toISOString()
-        };
-
-        await kanal.send({ embeds: [bbEmbed] });
-    } catch (e) {
-        console.error('bb mesajı gönderme hatası:', e);
-    }
-});
-
-// --- 8. BOT GİRİŞ VE DİNAMİK DURUM (PRESENCE) AYARI ---
-client.on('ready', () => {
-    console.log(`\n==================================================`);
-    console.log(`[BOT AKTİF] ${client.user.tag} başarıyla başlatıldı!`);
-    console.log(`==================================================\n`);
-
-    const durumlar = [
-        { name: 'DM\'den gelen soruları dinliyor...', type: ActivityType.Listening },
-        { name: 'Minecraft & Roblox oynuyor...', type: ActivityType.Playing },
-        { name: 'Sunucudaki sohbeti izliyor...', type: ActivityType.Watching }
-    ];
-
-    let index = 0;
-
-    const durumuGuncelle = () => {
-        const mevcut = durumlar[index];
-        client.user.setPresence({
-            activities: [{ name: mevcut.name, type: mevcut.type }],
-            status: 'online'
-        });
-        index = (index + 1) % durumlar.length;
-    };
-
-    durumuGuncelle();
-    setInterval(durumuGuncelle, 10000);
-});
-
+// --- 6. BOT GİRİŞİ ---
 client.login(process.env.TOKEN);
