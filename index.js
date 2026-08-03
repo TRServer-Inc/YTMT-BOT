@@ -13,7 +13,7 @@ const client = new Client({
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.DirectMessages,
-        GatewayIntentBits.GuildPresences // 👈 Aktivitenin sunucu listesinde görünmesi için şart!
+        GatewayIntentBits.GuildPresences
     ],
     partials: [Partials.Channel]
 });
@@ -59,7 +59,7 @@ async function geminiCevapAl(soru) {
     const bodyPayload = {
         system_instruction: {
             parts: [
-                { text: "Sen cana yakın, esprili, Roblox ve Minecraft oyunlarını çok iyi bilen fırlama bir Discord botusun. Lafı uzatmadan, kendini tekrar etmeden direkt olarak net, emojili ve kısa bir cevap ver." }
+                { text: "Sen cana yakın, esprili, Roblox ve Minecraft oyunlarını çok iyi bilen fırlama bir Discord botusun. Lafı uzatmadan, kendini tekrar etmeden direkt olarak net, emojili ve kısa bir cevap ver. Her zaman küçük harflerle yaz." }
             ]
         },
         contents: [
@@ -154,20 +154,21 @@ client.on('messageCreate', async (message) => {
 
     const iceriyorMu = kufurlerListesi.some(kufur => {
         const temizKufur = kufur.toLowerCase().trim();
-        return kelimeler.includes(temizKufur) || temizMetin.includes(temizKufur) || duzlesmisMesaj.includes(temizKufur);
+        if (!temizKufur) return false;
+        return kelimeler.includes(temizKufur) || (temizKufur.length > 3 && (temizMetin.includes(temizKufur) || duzlesmisMesaj.includes(temizKufur)));
     });
 
     if (iceriyorMu) {
         try {
-            await message.delete();
-            const rastgeleRenk = Math.floor(Math.random() * 16777215).toString(16);
+            await message.delete().catch(() => {});
+            const rastgeleRenk = Math.floor(Math.random() * 16777215);
             const uyariEmbed = {
-                color: parseInt(rastgeleRenk, 16),
+                color: rastgeleRenk,
                 title: '🚫 Küfür Yasak!',
                 description: `${message.author}, bu sunucuda küfür veya argo kullanımı yasaktır!`,
                 thumbnail: { url: 'https://cdn.discordapp.com/emojis/776713577452273706.png?v=1' },
                 footer: { text: `${message.author.username} uyarıldı.`, icon_url: message.author.displayAvatarURL({ dynamic: true }) },
-                timestamp: new Date()
+                timestamp: new Date().toISOString()
             };
             const uyariMesaji = await message.channel.send({ embeds: [uyariEmbed], allowedMentions: { repliedUser: false } });
             setTimeout(() => { uyariMesaji.delete().catch(() => {}); }, 5000);
@@ -242,7 +243,7 @@ client.on('interactionCreate', async (interaction) => {
     if (!interaction.isButton()) return;
 
     if (interaction.customId === 'kural_kabul') {
-        const uyeRolu = interaction.guild.roles.cache.find(role => role.name === 'Üye' || role.name === 'Uye');
+        const uyeRolu = interaction.guild.roles.cache.find(role => role.name.toLowerCase() === 'üye' || role.name.toLowerCase() === 'uye');
         
         if (uyeRolu) {
             try {
@@ -284,7 +285,7 @@ client.on('guildMemberAdd', async (member) => {
             title: '🎉 Aramıza Biri Katıldı!',
             description: `Hoş geldin ${member}! Seninle birlikte **${member.guild.memberCount}** kişi olduk. 🚀`,
             thumbnail: { url: member.user.displayAvatarURL({ dynamic: true }) },
-            timestamp: new Date()
+            timestamp: new Date().toISOString()
         };
 
         await kanal.send({ embeds: [hgEmbed] });
@@ -310,7 +311,7 @@ client.on('guildMemberRemove', async (member) => {
             title: '👋 Biri Aramızdan Ayrıldı...',
             description: `Görüşürüz **${member.user.username}**! Toplam **${member.guild.memberCount}** kişi kaldık. 😢`,
             thumbnail: { url: member.user.displayAvatarURL({ dynamic: true }) },
-            timestamp: new Date()
+            timestamp: new Date().toISOString()
         };
 
         await kanal.send({ embeds: [bbEmbed] });
@@ -320,7 +321,7 @@ client.on('guildMemberRemove', async (member) => {
 });
 
 // --- 8. BOT GİRİŞ VE DİNAMİK DURUM (PRESENCE) AYARI ---
-client.once('clientReady', () => {
+client.on('ready', () => {
     console.log(`\n==================================================`);
     console.log(`[BOT AKTİF] ${client.user.tag} başarıyla başlatıldı!`);
     console.log(`==================================================\n`);
