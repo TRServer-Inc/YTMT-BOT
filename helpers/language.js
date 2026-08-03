@@ -3,48 +3,68 @@ const path = require('path');
 
 const dbPath = path.join(__dirname, '../database.json');
 
-// Sunucunun dilini getir
-function getLanguage(guildId) {
+// Kullanıcının kişisel dilini getir (Varsayılan: tr)
+function getUserLanguage(userId) {
     if (!fs.existsSync(dbPath)) return 'tr';
-    const db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-    return db[guildId] || 'tr';
+    try {
+        const db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+        return db[userId] || 'tr';
+    } catch {
+        return 'tr';
+    }
 }
 
-// Sunucunun dilini ayarla
-function setLanguage(guildId, lang) {
+// Kullanıcının dilini kaydet
+function setUserLanguage(userId, lang) {
     let db = {};
     if (fs.existsSync(dbPath)) {
-        db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+        try {
+            db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+        } catch {
+            db = {};
+        }
     }
-    db[guildId] = lang;
+    db[userId] = lang;
     fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
 }
 
-// Sözlük
+// Tüm Komutlar için Sözlük
 const dictionary = {
     tr: {
         no_perm: "❌ bu komutu kullanmak için yetkin yok kanka!",
-        lang_changed: "✅ sunucu dili başarıyla **Türkçe** olarak ayarlandı!",
+        lang_changed: "✅ kişisel dilin başarıyla **Türkçe** olarak ayarlandı!",
+        lang_usage: "kanka bir dil seçmelisin! Örnek: `y!dil tr` veya `y!dil en`",
+        no_target: "kanka kimi etiketleyeceğimi belirtmedin!",
         reg_setup_success: "✅ **kayıt sistemi kurulumu tamamlandı!**",
         reg_success: "✅ {user} kullanıcısı başarıyla **{name}** olarak kayıt edildi!",
-        ban_setup_success: "✅ **ban sistemi kurulumu tamamlandı!**",
+        kayit_buton_text: "Kayıt Et",
+        modal_title: "Üye Kayıt Formu",
+        modal_name: "Kullanıcı Adı",
+        modal_age: "Yaş (İsteğe Bağlı)",
+        ban_success: "🔨 {user} başarıyla banlandı!",
         help_title: "🤖 YTMTBot | Komut Menüsü",
-        help_desc: "Aşağıda sunucuda kullanabileceğin tüm güncel komutlar listelenmiştir kanka!"
+        help_desc: "Kişisel komut listen aşağıda sıralanmıştır kanka!"
     },
     en: {
         no_perm: "❌ You don't have permission to use this command!",
-        lang_changed: "✅ Server language successfully set to **English**!",
-        reg_setup_success: "✅ **Registration system setup complete!**",
-        reg_success: "✅ User {user} has been successfully registered as **{name}**!",
-        ban_setup_success: "✅ **Ban system setup complete!**",
+        lang_changed: "✅ Your personal language has been set to **English**!",
+        lang_usage: "You must specify a language! Example: `y!dil tr` or `y!dil en`",
+        no_target: "You didn't specify a user!",
+        reg_setup_success: "✅ **Registration system setup completed!**",
+        reg_success: "✅ User {user} was successfully registered as **{name}**!",
+        kayit_buton_text: "Register Member",
+        modal_title: "User Registration Form",
+        modal_name: "Username",
+        modal_age: "Age (Optional)",
+        ban_success: "🔨 {user} has been successfully banned!",
         help_title: "🤖 YTMTBot | Command Menu",
-        help_desc: "Here is the list of all active commands you can use on this server!"
+        help_desc: "Here is your personal command list!"
     }
 };
 
-function getText(guildId, key, replacements = {}) {
-    const lang = getLanguage(guildId);
-    let text = dictionary[lang][key] || dictionary['tr'][key] || key;
+function getText(userId, key, replacements = {}) {
+    const lang = getUserLanguage(userId);
+    let text = dictionary[lang]?.[key] || dictionary['tr'][key] || key;
     
     for (const [placeholder, value] of Object.entries(replacements)) {
         text = text.replace(`{${placeholder}}`, value);
@@ -52,4 +72,4 @@ function getText(guildId, key, replacements = {}) {
     return text;
 }
 
-module.exports = { getLanguage, setLanguage, getText };
+module.exports = { getUserLanguage, setUserLanguage, getText };
