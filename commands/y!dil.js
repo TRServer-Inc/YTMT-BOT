@@ -1,22 +1,17 @@
-const { PermissionFlagsBits } = require('discord.js');
-const { setLanguage, getText } = require('../helpers/language');
+const { setUserLanguage, getText } = require('../helpers/language');
 
 module.exports = {
     name: 'dil',
-    description: 'Botun sunucudaki dilini değiştirir (tr / en).',
+    description: 'Kendi kişisel dilini ayarlar (tr / en).',
     async execute(message, args, client) {
-        if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) {
-            return message.reply(getText(message.guild.id, 'no_perm'));
-        }
-
         const secilenDil = args[0]?.toLowerCase();
 
         if (!secilenDil || (secilenDil !== 'tr' && secilenDil !== 'en')) {
-            return message.reply('kanka geçerli bir dil belirtmelisin! Örnek: `y!dil tr` veya `y!dil en`');
+            return message.reply(getText(message.author.id, 'lang_usage'));
         }
 
-        setLanguage(message.guild.id, secilenDil);
+        setUserLanguage(message.author.id, secilenDil);
 
-        return message.reply(getText(message.guild.id, 'lang_changed'));
+        return message.reply(getText(message.author.id, 'lang_changed'));
     }
 };
