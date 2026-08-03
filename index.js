@@ -36,6 +36,39 @@ try {
 
 const hgbbConfigPath = path.join(process.cwd(), 'hgbb-config.json');
 const linkEngelConfigPath = path.join(process.cwd(), 'linkengel-config.json');
+const langConfigPath = path.join(process.cwd(), 'language-config.json');
+const dilPath = path.join(process.cwd(), 'dil.json');
+
+// DİL DOSYASI YÜKLEME (I18N DESTEĞİ)
+let diller = {};
+if (fs.existsSync(dilPath)) {
+    try {
+        diller = JSON.parse(fs.readFileSync(dilPath, 'utf8'));
+        console.log('[SİSTEM] Dil çevirileri hafızaya yüklendi.');
+    } catch (e) {
+        console.error('[HATA] dil.json okuma hatası:', e);
+    }
+}
+
+client.getGuildLang = function(guildId) {
+    if (!guildId || !fs.existsSync(langConfigPath)) return 'tr';
+    try {
+        const config = JSON.parse(fs.readFileSync(langConfigPath, 'utf8'));
+        return config[guildId] || 'tr';
+    } catch (e) {
+        return 'tr';
+    }
+};
+
+client.t = function(key, guildId, dinamikVeri = {}) {
+    const lang = client.getGuildLang(guildId);
+    let metin = (diller[lang] && diller[lang][key]) ? diller[lang][key] : (diller['tr'] && diller['tr'][key] ? diller['tr'][key] : key);
+
+    for (const [k, v] of Object.entries(dinamikVeri)) {
+        metin = metin.replace(new RegExp(`{${k}}`, 'g'), v);
+    }
+    return metin;
+};
 
 // --- 3. KOMUT YÜKLEYİCİ ---
 const commandsPath = path.join(__dirname, 'commands');
@@ -320,7 +353,7 @@ client.on('guildMemberRemove', async (member) => {
 });
 
 // --- 8. BOT GİRİŞ VE DİNAMİK DURUM (PRESENCE) AYARI ---
-client.once('clientReady', () => {
+client.once('ready', () => {
     console.log(`\n==================================================`);
     console.log(`[BOT AKTİF] ${client.user.tag} başarıyla başlatıldı!`);
     console.log(`==================================================\n`);
