@@ -359,9 +359,9 @@ client.once('ready', () => {
     console.log(`==================================================\n`);
 
     const durumlar = [
-        { name: 'DM\'den gelen soruları', type: ActivityType.Listening },
-        { name: 'Minecraft & Roblox', type: ActivityType.Playing },
-        { name: 'Sunucudaki sohbeti', type: ActivityType.Watching }
+        { name: 'DM\'den gelen soruları dinliyor...', type: ActivityType.Listening },
+        { name: 'Minecraft & Roblox oynuyor...', type: ActivityType.Playing },
+        { name: 'Sunucudaki sohbeti...', type: ActivityType.Watching }
     ];
 
     let index = 0;
