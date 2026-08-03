@@ -361,7 +361,7 @@ client.once('ready', () => {
     const durumlar = [
         { name: 'DM\'den gelen soruları dinliyor...', type: ActivityType.Listening },
         { name: 'Minecraft & Roblox oynuyor...', type: ActivityType.Playing },
-        { name: 'Sunucudaki sohbeti...', type: ActivityType.Watching }
+        { name: 'Sunucudaki sohbeti izliyor...', type: ActivityType.Watching }
     ];
 
     let index = 0;
