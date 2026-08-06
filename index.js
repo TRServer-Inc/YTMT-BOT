@@ -1,4 +1,5 @@
 const { Client, GatewayIntentBits, Partials, Collection, ActivityType } = require('discord.js');
+const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
