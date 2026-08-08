@@ -3,7 +3,7 @@ module.exports = {
     aliases: ['zar-at'],
     async execute(message, args, client) {
         const rastgeleRenk = Math.floor(Math.random() * 16777215).toString(16);
-        const zarlar = ['0', '1', '2', '3', '4', '5', '6'];
+        const zarlar = ['1', '2', '3', '4', '5', '6'];
         const rastgeleZar = zarlar[Math.floor(Math.random() * zarlar.length)];
         const avatarURL = message.author.displayAvatarURL({ dynamic: true });
 
