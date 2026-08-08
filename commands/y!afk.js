@@ -1,43 +1,38 @@
 const { EmbedBuilder } = require('discord.js');
 
-// afk olan kullanıcıları geçici hafızada tutmak için Map
+// afk olan kullanıcıları tutacak harita
 const afkMap = new Map();
 
 module.exports = {
   name: 'afk',
-  aliases: ['y!afk'],
   description: 'kullanıcıyı afk moduna sokar.',
-  
-  // afk verisine veya haritaya diğer yerlerden erişmek gerekirse
   afkMap: afkMap,
 
   async execute(message, args) {
-    // afk sebebini al (boş bırakıldıysa varsayılan atansın)
     const sebep = args.join(' ') || 'sebep belirtilmedi';
 
-    // afk verisini kaydet
+    // afk kaydı al
     afkMap.set(message.author.id, {
       sebep: sebep,
-      zaman: Date.now(),
-      eskiRumuz: message.member.displayName
+      zaman: Date.now()
     });
 
-    // rumuzunun başına kum saati simgesi ekle
+    // kum saati ekleme
     try {
-      const yeniRumuz = `⏳ ${message.member.displayName}`.slice(0, 32); // discord maksimum 32 karaktere izin verir
-      await message.member.setNickname(yeniRumuz);
+      if (!message.member.displayName.startsWith('⏳ ')) {
+        const yeniIsim = `⏳ ${message.member.displayName}`.slice(0, 32);
+        await message.member.setNickname(yeniIsim);
+      }
     } catch (err) {
-      // botun yetkisi yetmezse veya kullanıcı sunucu sahibiyse hata vermemesi için yakalıyoruz
-      console.log(`[AFK] ${message.author.tag} kullanıcısının ismi değiştirilemedi (yetki yetersizliği veya sunucu sahibi).`);
+      console.log('[AFK HATA] Rumuz değiştirilemedi. Yetki yetersizliği veya kullanıcı sunucu sahibi.');
     }
 
-    // onay embed mesajı
     const embed = new EmbedBuilder()
       .setTitle('⏳ AFK Moduna Geçildi')
       .setColor('#6366f1')
       .setDescription(`başarıyla **AFK** moduna geçtin!\n\n**Sebep:** ${sebep}`)
       .setFooter({ text: 'mesaj yazdığında afk modundan otomatik çıkacaksın.' });
 
-    await message.channel.send({ embeds: [embed] });
+    return message.reply({ embeds: [embed] });
   }
 };
