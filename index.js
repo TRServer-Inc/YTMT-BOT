@@ -33,7 +33,7 @@ function kufurleriYukle() {
             kufurlerListesi = JSON.parse(rawData);
             console.log(`[SİSTEM] ${kufurlerListesi.length} adet küfür hafızaya yüklendi.`);
         } else {
-            console.log('[UYARI] kufurler.json dosyası bulunamadı! Lütfen proje kök dizinine kufurler.json ekleyin.');
+            console.log('[UYARI] kufurler.json dosyası bulunamadı!');
         }
     } catch (e) {
         console.error('[HATA] kufurler.json okuma hatası:', e);
@@ -43,6 +43,38 @@ kufurleriYukle();
 
 const hgbbConfigPath = path.join(process.cwd(), 'hgbb-config.json');
 const linkEngelConfigPath = path.join(process.cwd(), 'linkengel-config.json');
+
+// --- MESAJ SAYACI VERİTABANI HAFIZASI ---
+const mesajDataPath = path.join(process.cwd(), 'mesaj-data.json');
+let mesajData = {};
+
+if (fs.existsSync(mesajDataPath)) {
+    try {
+        mesajData = JSON.parse(fs.readFileSync(mesajDataPath, 'utf8'));
+    } catch (e) {
+        mesajData = {};
+    }
+}
+
+function mesajKaydet(guildId, userId) {
+    const bugun = new Date();
+    const d = new Date(Date.UTC(bugun.getFullYear(), bugun.getMonth(), bugun.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    const haftaKey = `${d.getUTCFullYear()}-${weekNo}`;
+
+    if (!mesajData[guildId]) mesajData[guildId] = {};
+    if (!mesajData[guildId][userId]) mesajData[guildId][userId] = { toplam: 0, haftalik: {} };
+
+    mesajData[guildId][userId].toplam = (mesajData[guildId][userId].toplam || 0) + 1;
+
+    if (!mesajData[guildId][userId].haftalik) mesajData[guildId][userId].haftalik = {};
+    mesajData[guildId][userId].haftalik[haftaKey] = (mesajData[guildId][userId].haftalik[haftaKey] || 0) + 1;
+
+    fs.writeFileSync(mesajDataPath, JSON.stringify(mesajData, null, 2));
+}
 
 // --- 3. KOMUT YÜKLEYİCİ ---
 const commandsPath = path.join(__dirname, 'commands');
@@ -107,12 +139,16 @@ client.on('messageCreate', async (message) => {
     const hamMesaj = message.content ? message.content.trim() : "";
     if (!hamMesaj) return;
 
+    // MESAJ SAYACINA KAYDET
+    if (message.guild) {
+        mesajKaydet(message.guild.id, message.author.id);
+    }
+
     // --- ÖZEL BÖLÜM: AFK SİSTEMİ KONTROLLERİ ---
     const afkCommand = client.commands.get('afk');
     if (afkCommand && afkCommand.afkMap) {
         const afkMap = afkCommand.afkMap;
 
-        // A. Mesaj atan kişi AFK ise AFK'dan çıkar
         if (afkMap.has(message.author.id) && !hamMesaj.toLowerCase().startsWith('y!afk')) {
             afkMap.delete(message.author.id);
 
@@ -134,7 +170,6 @@ client.on('messageCreate', async (message) => {
             message.reply({ embeds: [hosgeldinEmbed] });
         }
 
-        // B. Etiketlenen kullanıcılar arasında AFK var mı?
         if (message.mentions.users.size > 0) {
             message.mentions.users.forEach(user => {
                 if (afkMap.has(user.id)) {
