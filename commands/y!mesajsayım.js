@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 module.exports = {
-    name: 'y!mesajsayım',
+    name: 'mesajsayım',
     description: 'Etiketlenen kişinin veya kendinizin mesaj sayısını gösterir.',
     async execute(message, args, client) {
         const hedefKullanici = message.mentions.users.first() || message.author;
