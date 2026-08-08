@@ -218,8 +218,23 @@ client.on('messageCreate', async (message) => {
         }
     }
 
-    // --- SUNUCU İÇİ İŞLEMLER ---
     const hamKucuk = hamMesaj.toLowerCase();
+
+    // --- ÖNCELİKLİ SİSTEM 1: NORMAL KOMUTLAR (ÖNCE KOMUTA BAKILIR) ---
+    if (hamKucuk.startsWith('y!')) {
+        const args = hamMesaj.slice(2).trim().split(/ +/);
+        const commandName = args.shift().toLowerCase();
+
+        const command = client.commands.get(commandName);
+        if (command && typeof command.execute === 'function') {
+            try {
+                return await command.execute(message, args, client);
+            } catch (error) {
+                console.error(`${commandName} çalışırken hata:`, error);
+                return message.reply('Komut çalıştırılırken bir hata oluştu!');
+            }
+        }
+    }
 
     // SİSTEM A: "sa" Selam Sistemi
     if (hamKucuk === 'sa' || hamKucuk === 's.a' || hamKucuk === 'selamun aleyküm' || hamKucuk === 'selamün aleyküm') {
@@ -286,22 +301,6 @@ client.on('messageCreate', async (message) => {
                 return;
             } catch (error) {
                 console.error('[KÜFÜR SILMA HATASI] Botun mesaj silme yetkisi yok! Hata:', error.message);
-            }
-        }
-    }
-
-    // SİSTEM D: Normal Komutlar
-    if (hamKucuk.startsWith('y!')) {
-        const args = hamMesaj.slice(2).trim().split(/ +/);
-        const commandName = args.shift().toLowerCase();
-
-        const command = client.commands.get(commandName);
-        if (command && typeof command.execute === 'function') {
-            try {
-                return await command.execute(message, args, client);
-            } catch (error) {
-                console.error(`${commandName} çalışırken hata:`, error);
-                return message.reply('Komut çalıştırılırken bir hata oluştu!');
             }
         }
     }
