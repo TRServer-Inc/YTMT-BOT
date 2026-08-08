@@ -26,17 +26,20 @@ const aiCooldowns = new Map();
 const kufurlerPath = path.join(process.cwd(), 'kufurler.json');
 let kufurlerListesi = [];
 
-try {
-    if (fs.existsSync(kufurlerPath)) {
-        const rawData = fs.readFileSync(kufurlerPath, 'utf8');
-        kufurlerListesi = JSON.parse(rawData);
-        console.log(`[SİSTEM] ${kufurlerListesi.length} adet küfür hafızaya yüklendi.`);
-    } else {
-        console.log('[UYARI] kufurler.json dosyası bulunamadı!');
+function kufurleriYukle() {
+    try {
+        if (fs.existsSync(kufurlerPath)) {
+            const rawData = fs.readFileSync(kufurlerPath, 'utf8');
+            kufurlerListesi = JSON.parse(rawData);
+            console.log(`[SİSTEM] ${kufurlerListesi.length} adet küfür hafızaya yüklendi.`);
+        } else {
+            console.log('[UYARI] kufurler.json dosyası bulunamadı! Lütfen proje kök dizinine kufurler.json ekleyin.');
+        }
+    } catch (e) {
+        console.error('[HATA] kufurler.json okuma hatası:', e);
     }
-} catch (e) {
-    console.error('[HATA] kufurler.json okuma hatası:', e);
 }
+kufurleriYukle();
 
 const hgbbConfigPath = path.join(process.cwd(), 'hgbb-config.json');
 const linkEngelConfigPath = path.join(process.cwd(), 'linkengel-config.json');
@@ -218,6 +221,7 @@ client.on('messageCreate', async (message) => {
         const kelimeler = normMesaj.split(/\s+/);
 
         const kufurVarMi = kufurlerListesi.some(kufur => {
+            if (typeof kufur !== 'string') return false;
             const normKufur = metniNormalizeEt(kufur.trim());
             if (!normKufur) return false;
 
@@ -246,7 +250,7 @@ client.on('messageCreate', async (message) => {
                 setTimeout(() => { uyariMesaji.delete().catch(() => {}); }, 5000);
                 return;
             } catch (error) {
-                console.error('[KÜFÜR SILMA HATASI] Botun "Mesajları Yönet" (Manage Messages) yetkisi var mı kontrol et! Hata:', error.message);
+                console.error('[KÜFÜR SILMA HATASI] Botun mesaj silme yetkisi yok! Hata:', error.message);
             }
         }
     }
