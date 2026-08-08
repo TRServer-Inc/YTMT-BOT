@@ -2,89 +2,76 @@ const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
-const dataPath = path.join(__dirname, '../data/uyarilar.json');
-
-// json dosyasını okuma yardımcı fonksiyonu
-function uyarilariOku() {
-    if (!fs.existsSync(path.dirname(dataPath))) {
-        fs.mkdirSync(path.dirname(dataPath), { recursive: true });
-    }
-    if (!fs.existsSync(dataPath)) {
-        fs.writeFileSync(dataPath, '{}', 'utf-8');
-    }
-    const rawData = fs.readFileSync(dataPath, 'utf-8');
-    return JSON.parse(rawData || '{}');
-}
-
-// json dosyasına yazma yardımcı fonksiyonu
-function uyarilariYaz(data) {
-    fs.writeFileSync(dataPath, JSON.stringify(data, null, 2), 'utf-8');
-}
-
 module.exports = {
     name: 'uyarı',
-    description: 'Kullanıcıya kural ihlali nedeniyle uyarı verir.',
+    description: 'Belirtilen kullanıcıya uyarı verir.',
     async execute(message, args, client) {
-        // yetki kontrolü (sadece yetkisi olan adminler)
-        if (!message.member.permissions.has(PermissionFlagsBits.ManageMessages) && !message.member.permissions.has(PermissionFlagsBits.Administrator)) {
-            return message.reply({ content: 'bu komutu kullanmak için mesajları yönet yetkisine sahip olmalısın kanka!' });
+        if (!message.member.permissions.has(PermissionFlagsBits.ManageMessages)) {
+            return message.reply('bu komutu kullanmak için `Mesajları Yönet` yetkisine sahip olmalısın kanka!');
         }
 
-        const hedef = message.mentions.members.first();
+        const hedef = message.mentions.members.first() || message.guild.members.cache.get(args[0]);
         if (!hedef) {
-            return message.reply({ content: 'lütfen uyarılacak kullanıcıyı etiketle kanka! Örnek: `y!uyarı @kullanıcı sebep`' });
-        }
-
-        if (hedef.id === message.author.id) {
-            return message.reply({ content: 'kendine uyarı veremezsin kanka!' });
+            return message.reply('lütfen uyarılacak kullanıcıyı etiketle veya ID\'sini yaz kanka!');
         }
 
         if (hedef.user.bot) {
-            return message.reply({ content: 'botlara uyarı veremezsin kanka!' });
+            return message.reply('botlara uyarı veremezsin kanka!');
         }
 
         const sebep = args.slice(1).join(' ') || 'Sebep belirtilmedi.';
-        const guildId = message.guild.id;
-        const userId = hedef.id;
+        const dataPath = path.join(__dirname, '../data/uyarilar.json');
 
-        const uyarilar = uyarilariOku();
+        // klasör ve dosya kontrolü
+        if (!fs.existsSync(path.dirname(dataPath))) {
+            fs.mkdirSync(path.dirname(dataPath), { recursive: true });
+        }
 
-        if (!uyarilar[guildId]) uyarilar[guildId] = {};
-        if (!uyarilar[guildId][userId]) uyarilar[guildId][userId] = [];
+        let uyarilarData = {};
+        if (fs.existsSync(dataPath)) {
+            try {
+                uyarilarData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+            } catch (err) {
+                uyarilarData = {};
+            }
+        }
 
-        // yeni uyarıyı ekle
-        uyarilar[guildId][userId].push({
+        const guildID = message.guild.id;
+        const userID = hedef.id;
+
+        if (!uyarilarData[guildID]) uyarilarData[guildID] = {};
+        if (!uyarilarData[guildID][userID]) uyarilarData[guildID][userID] = [];
+
+        uyarilarData[guildID][userID].push({
             sebep: sebep,
-            yazan: message.author.id,
+            yetkili: message.author.id,
             tarih: new Date().toISOString()
         });
 
-        uyarilariYaz(uyarilar);
+        fs.writeFileSync(dataPath, JSON.stringify(uyarilarData, null, 4));
 
-        const toplamUyari = uyarilar[guildId][userId].length;
-        const kalanUyari = 10 - toplamUyari;
+        const toplamUyari = uyarilarData[guildID][userID].length;
+        const kalanHak = 10 - toplamUyari;
 
         const embed = new EmbedBuilder()
-            .setTitle('⚠️ Kullanıcıya Uyarı Verildi')
+            .setTitle('⚠️ Kullanıcı Uyarıldı')
             .setColor('#f59e0b')
-            .setThumbnail(hedef.user.displayAvatarURL())
             .addFields(
-                { name: '👤 Uyarılan Kullanıcı', value: `${hedef.user.tag} (${hedef})`, inline: true },
-                { name: '🛡️ Uyarı Veren Yetkili', value: `${message.author.tag}`, inline: true },
-                { name: '📝 Uyarı Sebebi', value: sebep, inline: false },
-                { name: '📊 Toplam Uyarı Sayısı', value: `${toplamUyari} / 10`, inline: true },
-                { name: '🚨 Ban Yeme İhtimaline Kalan', value: `${kalanUyari > 0 ? kalanUyari : 0} uyarı`, inline: true }
+                { name: 'Uyarılan Kullanıcı', value: `${hedef.user.tag} (\`${hedef.id}\`)`, inline: true },
+                { name: 'Yetkili', value: `${message.author.tag}`, inline: true },
+                { name: 'Sebep', value: sebep, inline: false },
+                { name: 'Toplam Uyarı', value: `\`${toplamUyari} / 10\``, inline: true },
+                { name: 'Kalan Hak', value: `\`${kalanHak}\``, inline: true }
             )
-            .setFooter({ text: '10 uyarıya ulaşan kullanıcılar ban riski taşır.' })
             .setTimestamp();
 
         await message.channel.send({ embeds: [embed] });
 
-        // kullanıcıya dm üzerinden bilgilendirme
-        try {
-            await hedef.send({ content: `**${message.guild.name}** sunucusunda **${sebep}** sebebiyle uyarı aldın. Toplam Uyarın: **${toplamUyari}/10**` });
-        } catch (e) {
-            // dm kapalıysa hata vermesin
+        if (toplamUyari >= 10) {
+            if (hedef.bannable) {
+                await hedef.ban({ reason: '10 uyarı sınırına ulaşıldı.' });
+                message.channel.send(`🚨 **${hedef.user.tag}** kullanıcısı 10 uyarı sınırına ulaştığı için otomatik olarak sunucudan banlandı!`);
+            }
         }
     }
 };
