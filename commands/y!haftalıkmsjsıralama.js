@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 module.exports = {
-    name: 'y!haftalıkmsjsıralama',
+    name: 'haftalıkmsjsıralama',
     description: 'Bu hafta en çok mesaj atan kullanıcıları sıralar.',
     async execute(message, args, client) {
         const mesajDataPath = path.join(process.cwd(), 'mesaj-data.json');
