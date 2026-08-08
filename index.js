@@ -28,8 +28,11 @@ let kufurlerListesi = [];
 
 try {
     if (fs.existsSync(kufurlerPath)) {
-        kufurlerListesi = JSON.parse(fs.readFileSync(kufurlerPath, 'utf8'));
+        const rawData = fs.readFileSync(kufurlerPath, 'utf8');
+        kufurlerListesi = JSON.parse(rawData);
         console.log(`[SİSTEM] ${kufurlerListesi.length} adet küfür hafızaya yüklendi.`);
+    } else {
+        console.log('[UYARI] kufurler.json dosyası bulunamadı!');
     }
 } catch (e) {
     console.error('[HATA] kufurler.json okuma hatası:', e);
@@ -81,6 +84,7 @@ async function geminiCevapAl(soru) {
 
 // --- TÜRKÇE HARF TEMİZLEME YARDIMCISI ---
 function metniNormalizeEt(str) {
+    if (!str) return '';
     return str
         .replace(/İ/g, 'i')
         .replace(/I/g, 'ı')
@@ -206,31 +210,27 @@ client.on('messageCreate', async (message) => {
         }
     }
 
-    // SİSTEM C: GELİŞMİŞ KÜFÜR ENGELLEYİCİ (YENİLENDİ 🚀)
-    const yoneticiMi = message.member && message.member.permissions.has('Administrator');
-    if (!yoneticiMi && kufurlerListesi.length > 0) {
+    // SİSTEM C: TAM KONTROLLÜ KÜFÜR ENGELLEYİCİ
+    if (kufurlerListesi.length > 0) {
         const normMesaj = metniNormalizeEt(hamMesaj);
-        const noktasizMesaj = normMesaj.replace(/[^a-z0-0\s]/g, '');
-        const birlesikMesaj = normMesaj.replace(/[^a-z0-0]/g, '');
+        const noktasizMesaj = normMesaj.replace(/[^a-z0-9\s]/g, '');
+        const birlesikMesaj = normMesaj.replace(/[^a-z0-9]/g, '');
         const kelimeler = normMesaj.split(/\s+/);
 
         const kufurVarMi = kufurlerListesi.some(kufur => {
             const normKufur = metniNormalizeEt(kufur.trim());
             if (!normKufur) return false;
 
-            // 1. Tam kelime eşleşmesi
             if (kelimeler.includes(normKufur)) return true;
-
-            // 2. Cümle / Parça eşleşmesi
             if (normMesaj.includes(normKufur) || noktasizMesaj.includes(normKufur)) return true;
-
-            // 3. 3 harften uzun küfürlerde birleşik kontrol (örneğin a.m.k veya a m k)
             if (normKufur.length >= 3 && birlesikMesaj.includes(normKufur)) return true;
 
             return false;
         });
 
         if (kufurVarMi) {
+            console.log(`[KÜFÜR YAKALANDI] Yazan: ${message.author.tag} | Mesaj: "${hamMesaj}"`);
+            
             try {
                 await message.delete();
                 const rastgeleRenk = Math.floor(Math.random() * 16777215).toString(16);
@@ -246,7 +246,7 @@ client.on('messageCreate', async (message) => {
                 setTimeout(() => { uyariMesaji.delete().catch(() => {}); }, 5000);
                 return;
             } catch (error) {
-                console.error('Mesaj silme yetki hatası:', error);
+                console.error('[KÜFÜR SILMA HATASI] Botun "Mesajları Yönet" (Manage Messages) yetkisi var mı kontrol et! Hata:', error.message);
             }
         }
     }
