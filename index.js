@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Partials, Collection, ActivityType } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, Collection, ActivityType, EmbedBuilder } = require('discord.js');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
@@ -85,6 +85,52 @@ client.on('messageCreate', async (message) => {
 
     const hamMesaj = message.content ? message.content.trim() : "";
     if (!hamMesaj) return;
+
+    // --- ÖZEL BÖLÜM: AFK SİSTEMİ KONTROLLERİ ---
+    const afkCommand = client.commands.get('afk');
+    if (afkCommand && afkCommand.afkMap) {
+        const afkMap = afkCommand.afkMap;
+
+        // A. Mesaj atan kişi AFK ise AFK'dan çıkar (eğer y!afk komutunu yazmıyorsa)
+        if (afkMap.has(message.author.id) && !hamMesaj.toLowerCase().startsWith('y!afk')) {
+            afkMap.delete(message.author.id);
+
+            // Rumuzdan kum saatini temizle
+            try {
+                if (message.member && message.member.displayName.startsWith('⏳ ')) {
+                    const eskiIsim = message.member.displayName.replace('⏳ ', '');
+                    await message.member.setNickname(eskiIsim);
+                }
+            } catch (err) {
+                console.log('[AFK HATA] Rumuz sıfırlanamadı.');
+            }
+
+            const hosgeldinEmbed = new EmbedBuilder()
+                .setTitle('🎉 Hoş Geldin!')
+                .setColor('#22c55e')
+                .setDescription(`tekrardan hoş geldin **${message.author.username}**!\nartık **AFK** değilsin.`)
+                .setFooter({ text: 'afk modundan çıkarıldın.' });
+
+            message.reply({ embeds: [hosgeldinEmbed] });
+        }
+
+        // B. Etiketlenen kullanıcılar arasında AFK var mı?
+        if (message.mentions.users.size > 0) {
+            message.mentions.users.forEach(user => {
+                if (afkMap.has(user.id)) {
+                    const bilgi = afkMap.get(user.id);
+                    const dk = Math.floor((Date.now() - bilgi.zaman) / 1000 / 60);
+
+                    const afkUyariEmbed = new EmbedBuilder()
+                        .setTitle('⚠️ Kullanıcı AFK')
+                        .setColor('#f59e0b')
+                        .setDescription(`etiketlediğin **${user.username}** şu an AFK!\n\n**Sebep:** ${bilgi.sebep}\n**Süre:** ${dk > 0 ? `${dk} dakika önce` : 'az önce'} afk oldu.`);
+
+                    message.reply({ embeds: [afkUyariEmbed] });
+                }
+            });
+        }
+    }
 
     // --- ÖZEL BÖLÜM: DM YAPAY ZEKA ---
     if (!message.guild) {
