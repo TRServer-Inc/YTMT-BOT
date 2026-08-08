@@ -14,7 +14,7 @@ module.exports = {
                 embed: new EmbedBuilder()
                     .setTitle('🤖 Bot Yardım Menüsü')
                     .setColor('#3b82f6')
-                    .setDescription('Aşağıdaki **seçim menüsünden** veya **butonlardan** istediğin kategoriyi seçerek tüm komutları inceleyebilirsin kanka!\n\n**Kategoriler:**\n• 🎮 **Eğlence & Oyun Komutları:** Adam asmaca ve mini oyunlar\n• 📊 **İstatistik Komutları:** Mesaj ve aktiflik takibi\n• ⚙️ **Yönetim & Güvenlik Komutları:** Sunucu yönetimi, ceza ve koruma sistemleri\n• 💤 **Kullanıcı Komutları:** Genel kullanım ve AFK sistemi\n• 💎 **Premium Komutları:** Premium ayrıcalıkları ve yönetimi\n• 🤖 **Yapay Zeka Komutları:** Akıllı sohbet ve AI özellikleri')
+                    .setDescription('Aşağıdaki **seçim menüsünden** veya **butonlardan** istediğin kategoriyi seçerek tüm komutları inceleyebilirsin kanka!\n\n**Kategoriler:**\n• 🎮 **Eğlence & Oyun Komutları:** Adam asmaca ve mini oyunlar\n• 📊 **İstatistik Komutları:** Mesaj ve aktiflik takibi\n• ⚙️ **Yönetim & Güvenlik Komutları:** Sunucu yönetimi, ceza, uyarı ve koruma sistemleri\n• 💤 **Kullanıcı Komutları:** Genel kullanım, bot bilgisi ve AFK sistemi\n• 💎 **Premium Komutları:** Premium ayrıcalıkları ve yönetimi\n• 🤖 **Yapay Zeka Komutları:** Akıllı sohbet ve AI özellikleri')
                     .setThumbnail(client.user.displayAvatarURL())
                     .setFooter({ text: 'Sayfa 1/7 | y!yardım' })
                     .setTimestamp()
@@ -48,7 +48,7 @@ module.exports = {
                 embed: new EmbedBuilder()
                     .setTitle('⚙️ Yönetim ve Koruma Komutları')
                     .setColor('#ef4444')
-                    .setDescription('Sunucuyu yönetmek ve güvenliği sağlamak için kullanılan komutlar.\n\n**Komutlar:**\n• `y!ban` - Kullanıcıya Banlanmış rolü verir ve kanallara erişimini keser.\n• `y!fullban` - Kullanıcıyı sunucudan tamamen banlar.\n• `y!unban` - Kullanıcının sunucudaki yasağını kaldırır.\n• `y!kick` - Belirtilen üyeyi sunucudan atar.\n• `y!link-engel [aç/kapat]` - Sunucuda link ve reklam paylaşımını engeller.\n• `y!ban-kurulum` - Fake ban sistemi için Banlanmış rolü ve kanal izinlerini kurar.\n• `y!kayıt-kurulum` - Kayıtsız ve Kayıtlı rollerini ve kanal izinlerini kurar.\n• `y!kayıt` - Kullanıcıyı manuel olarak kayıt eder.\n• `y!hgbb-kur [#kanal]` - Giriş-çıkış bildirimlerinin atılacağı kanalı ayarlar.\n• `y!kurallar` - Sunucu kurallarını ve onay butonunu gönderir.\n• `y!rolekle` - Sunucu için hazır temel rollerin tamamını otomatik oluşturur.\n• `y!rolleri-sil` - Sunucudaki özel rolleri topluca siler.\n• `y!sunucukur` - Sunucu için hazır kanal ve kategorileri oluşturur.\n• `y!rolver` - Belirtilen üyeye rol verir.\n• `y!rolal` - Belirtilen üyeden rol alır.')
+                    .setDescription('Sunucuyu yönetmek ve güvenliği sağlamak için kullanılan komutlar.\n\n**Komutlar:**\n• `y!uyarı @kullanıcı [sebep]` - Kullanıcıya kural ihlali nedeniyle uyarı verir.\n• `y!uyarılar [@kullanıcı]` - Kullanıcının toplam uyarı sayısını ve kalan ban sınırını gösterir.\n• `y!ban` - Kullanıcıya Banlanmış rolü verir ve kanallara erişimini keser.\n• `y!fullban` - Kullanıcıyı sunucudan tamamen banlar.\n• `y!unban` - Kullanıcının sunucudaki yasağını kaldırır.\n• `y!kick` - Belirtilen üyeyi sunucudan atar.\n• `y!link-engel [aç/kapat]` - Sunucuda link ve reklam paylaşımını engeller.\n• `y!ban-kurulum` - Fake ban sistemi için Banlanmış rolü ve kanal izinlerini kurar.\n• `y!kayıt-kurulum` - Kayıtsız ve Kayıtlı rollerini ve kanal izinlerini kurar.\n• `y!kayıt` - Kullanıcıyı manuel olarak kayıt eder.\n• `y!hgbb-kur [#kanal]` - Giriş-çıkış bildirimlerinin atılacağı kanalı ayarlar.\n• `y!kurallar` - Sunucu kurallarını ve onay butonunu gönderir.\n• `y!rolekle` - Sunucu için hazır temel rollerin tamamını otomatik oluşturur.\n• `y!rolleri-sil` - Sunucudaki özel rolleri topluca siler.\n• `y!sunucukur` - Sunucu için hazır kanal ve kategorileri oluşturur.\n• `y!rolver` - Belirtilen üyeye rol verir.\n• `y!rolal` - Belirtilen üyeden rol alır.')
                     .setFooter({ text: 'Sayfa 4/7 | y!yardım' })
                     .setTimestamp()
             },
@@ -59,7 +59,7 @@ module.exports = {
                 embed: new EmbedBuilder()
                     .setTitle('💤 Kullanıcı Komutları')
                     .setColor('#10b981')
-                    .setDescription('Tüm kullanıcıların erişebileceği genel kullanım komutları.\n\n**Komutlar:**\n• `y!afk [sebep]` - Sizi AFK moduna alır, mesaj yazınca otomatik çıkar.\n• `y!sa` / `sa` - Otomatik selamlaşma sistemini tetikler.\n• `y!ping` - Botun gecikme süresini gösterir.\n• `y!profil` - Kullanıcının profil bilgilerini gösterir.\n• `y!sunucu` - Sunucu istatistiklerini ve bilgilerini gösterir.')
+                    .setDescription('Tüm kullanıcıların erişebileceği genel kullanım komutları.\n\n**Komutlar:**\n• `y!botbilgi` - Botun istatistiklerini, ping değerini ve tanıtım kartını gösterir.\n• `y!afk [sebep]` - Sizi AFK moduna alır, mesaj yazınca otomatik çıkar.\n• `y!sa` / `sa` - Otomatik selamlaşma sistemini tetikler.\n• `y!ping` - Botun gecikme süresini gösterir.\n• `y!profil` - Kullanıcının profil bilgilerini gösterir.\n• `y!sunucu` - Sunucu istatistiklerini ve bilgilerini gösterir.')
                     .setFooter({ text: 'Sayfa 5/7 | y!yardım' })
                     .setTimestamp()
             },
