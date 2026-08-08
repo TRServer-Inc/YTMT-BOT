@@ -3,26 +3,26 @@ const path = require('path');
 
 module.exports = {
     name: 'veriler',
-    description: 'Uyarı verilerinin bulunduğu json dosyasını gönderir.',
+    description: 'Canlı sunucudaki database.json dosyasını sadece bot sahibine gönderir.',
     async execute(message, args, client) {
         
-        // sadece bot sahibinin kullanması için id kontrolü (kendi discord id'ni yaz kanka)
-        const SAHIP_ID = '1050069485421334549';
+        // kendi discord id'ni buraya yaz kanka
+        const SAHIP_ID = 'SENIN_DISCORD_ID_BURAYA';
         
         if (message.author.id !== SAHIP_ID) {
             return message.reply('bu komutu sadece bot sahibi kullanabilir kanka!');
         }
 
-        const dataPath = path.join(__dirname, '../data/uyarilar.json');
+        const dbPath = path.join(__dirname, '../database.json');
 
-        if (!fs.existsSync(dataPath)) {
-            return message.reply('henüz hiç kayıtlı uyarı verisi yok veya dosya oluşturulmamış kanka.');
+        if (!fs.existsSync(dbPath)) {
+            return message.reply('henüz `database.json` dosyası oluşturulmamış veya bulunamıyor kanka.');
         }
 
         try {
             await message.reply({
-                content: '📁 işte canlı sunucudaki güncel `uyarilar.json` dosyan kanka:',
-                files: [dataPath]
+                content: '📁 işte canlı sunucudaki güncel `database.json` dosyan kanka:',
+                files: [dbPath]
             });
         } catch (error) {
             console.error('dosya gönderme hatası:', error);
