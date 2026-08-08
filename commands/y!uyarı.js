@@ -20,37 +20,33 @@ module.exports = {
         }
 
         const sebep = args.slice(1).join(' ') || 'Sebep belirtilmedi.';
-        const dataPath = path.join(__dirname, '../data/uyarilar.json');
+        const dbPath = path.join(__dirname, '../database.json');
 
-        // klasör ve dosya kontrolü
-        if (!fs.existsSync(path.dirname(dataPath))) {
-            fs.mkdirSync(path.dirname(dataPath), { recursive: true });
-        }
-
-        let uyarilarData = {};
-        if (fs.existsSync(dataPath)) {
+        let dbData = {};
+        if (fs.existsSync(dbPath)) {
             try {
-                uyarilarData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+                dbData = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
             } catch (err) {
-                uyarilarData = {};
+                dbData = {};
             }
         }
 
         const guildID = message.guild.id;
         const userID = hedef.id;
 
-        if (!uyarilarData[guildID]) uyarilarData[guildID] = {};
-        if (!uyarilarData[guildID][userID]) uyarilarData[guildID][userID] = [];
+        if (!dbData.uyarilar) dbData.uyarilar = {};
+        if (!dbData.uyarilar[guildID]) dbData.uyarilar[guildID] = {};
+        if (!dbData.uyarilar[guildID][userID]) dbData.uyarilar[guildID][userID] = [];
 
-        uyarilarData[guildID][userID].push({
+        dbData.uyarilar[guildID][userID].push({
             sebep: sebep,
             yetkili: message.author.id,
             tarih: new Date().toISOString()
         });
 
-        fs.writeFileSync(dataPath, JSON.stringify(uyarilarData, null, 4));
+        fs.writeFileSync(dbPath, JSON.stringify(dbData, null, 4));
 
-        const toplamUyari = uyarilarData[guildID][userID].length;
+        const toplamUyari = dbData.uyarilar[guildID][userID].length;
         const kalanHak = 10 - toplamUyari;
 
         const embed = new EmbedBuilder()
