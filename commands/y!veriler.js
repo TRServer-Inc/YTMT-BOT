@@ -7,7 +7,7 @@ module.exports = {
     async execute(message, args, client) {
         
         // kendi discord id'ni buraya yaz kanka
-        const SAHIP_ID = 'SENIN_DISCORD_ID_BURAYA';
+        const SAHIP_ID = '1050069485421334549';
         
         if (message.author.id !== SAHIP_ID) {
             return message.reply('bu komutu sadece bot sahibi kullanabilir kanka!');
