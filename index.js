@@ -14,13 +14,13 @@ const client = new Client({
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.DirectMessages,
-        GatewayIntentBits.GuildPresences // 👈 Aktivitenin sunucu listesinde görünmesi için şart!
+        GatewayIntentBits.GuildPresences
     ],
     partials: [Partials.Channel]
 });
 
 client.commands = new Collection();
-const aiCooldowns = new Map(); // Yapay zeka bekleme süresi takibi için
+const aiCooldowns = new Map();
 
 // --- 2. AYAR DOSYALARI VE HAFIZA HAZIRLIĞI ---
 const kufurlerPath = path.join(process.cwd(), 'kufurler.json');
@@ -29,7 +29,7 @@ let kufurlerListesi = [];
 try {
     if (fs.existsSync(kufurlerPath)) {
         kufurlerListesi = JSON.parse(fs.readFileSync(kufurlerPath, 'utf8'));
-        console.log('[SİSTEM] Küfür listesi hafızaya yüklendi.');
+        console.log(`[SİSTEM] ${kufurlerListesi.length} adet küfür hafızaya yüklendi.`);
     }
 } catch (e) {
     console.error('[HATA] kufurler.json okuma hatası:', e);
@@ -79,6 +79,20 @@ async function geminiCevapAl(soru) {
     return response.data;
 }
 
+// --- TÜRKÇE HARF TEMİZLEME YARDIMCISI ---
+function metniNormalizeEt(str) {
+    return str
+        .replace(/İ/g, 'i')
+        .replace(/I/g, 'ı')
+        .toLowerCase()
+        .replace(/ğ/g, 'g')
+        .replace(/ü/g, 'u')
+        .replace(/ş/g, 's')
+        .replace(/ı/g, 'i')
+        .replace(/ö/g, 'o')
+        .replace(/ç/g, 'c');
+}
+
 // --- 4. MERKEZÎ MESAJ DİNLEYİCİSİ ---
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
@@ -91,11 +105,10 @@ client.on('messageCreate', async (message) => {
     if (afkCommand && afkCommand.afkMap) {
         const afkMap = afkCommand.afkMap;
 
-        // A. Mesaj atan kişi AFK ise AFK'dan çıkar (eğer y!afk komutunu yazmıyorsa)
+        // A. Mesaj atan kişi AFK ise AFK'dan çıkar
         if (afkMap.has(message.author.id) && !hamMesaj.toLowerCase().startsWith('y!afk')) {
             afkMap.delete(message.author.id);
 
-            // Rumuzdan kum saatini temizle
             try {
                 if (message.member && message.member.displayName.startsWith('⏳ ')) {
                     const eskiIsim = message.member.displayName.replace('⏳ ', '');
@@ -134,7 +147,6 @@ client.on('messageCreate', async (message) => {
 
     // --- ÖZEL BÖLÜM: DM YAPAY ZEKA ---
     if (!message.guild) {
-        // Cooldown kontrolü
         const simdi = Date.now();
         const sonKullanim = aiCooldowns.get(message.author.id) || 0;
         if (simdi - sonKullanim < 4000) {
@@ -165,10 +177,10 @@ client.on('messageCreate', async (message) => {
     }
 
     // --- SUNUCU İÇİ İŞLEMLER ---
-    const temizMetin = hamMesaj.replace(/I/g, 'i').replace(/İ/g, 'i').toLowerCase();
+    const hamKucuk = hamMesaj.toLowerCase();
 
     // SİSTEM A: "sa" Selam Sistemi
-    if (temizMetin === 'sa' || temizMetin === 's.a' || temizMetin === 'selamun aleyküm' || temizMetin === 'selamün aleyküm') {
+    if (hamKucuk === 'sa' || hamKucuk === 's.a' || hamKucuk === 'selamun aleyküm' || hamKucuk === 'selamün aleyküm') {
         return message.reply('Aleyküm Selam, hoş geldin!');
     }
 
@@ -177,7 +189,6 @@ client.on('messageCreate', async (message) => {
         try {
             const linkConfig = JSON.parse(fs.readFileSync(linkEngelConfigPath, 'utf8'));
             const sistemAcikMi = linkConfig[message.guild.id];
-
             const yoneticiMi = message.member && message.member.permissions.has('Administrator');
 
             if (sistemAcikMi && !yoneticiMi) {
@@ -195,37 +206,53 @@ client.on('messageCreate', async (message) => {
         }
     }
 
-    // SİSTEM C: Küfür Engelleyici
-    const kelimeler = temizMetin.split(/\s+/);
-    const duzlesmisMesaj = temizMetin.replace(/[^a-zA-Z0-9ğüşöçıİĞÜŞÖÇ]/g, '');
+    // SİSTEM C: GELİŞMİŞ KÜFÜR ENGELLEYİCİ (YENİLENDİ 🚀)
+    const yoneticiMi = message.member && message.member.permissions.has('Administrator');
+    if (!yoneticiMi && kufurlerListesi.length > 0) {
+        const normMesaj = metniNormalizeEt(hamMesaj);
+        const noktasizMesaj = normMesaj.replace(/[^a-z0-0\s]/g, '');
+        const birlesikMesaj = normMesaj.replace(/[^a-z0-0]/g, '');
+        const kelimeler = normMesaj.split(/\s+/);
 
-    const iceriyorMu = kufurlerListesi.some(kufur => {
-        const temizKufur = kufur.toLowerCase().trim();
-        return kelimeler.includes(temizKufur) || temizMetin.includes(temizKufur) || duzlesmisMesaj.includes(temizKufur);
-    });
+        const kufurVarMi = kufurlerListesi.some(kufur => {
+            const normKufur = metniNormalizeEt(kufur.trim());
+            if (!normKufur) return false;
 
-    if (iceriyorMu) {
-        try {
-            await message.delete();
-            const rastgeleRenk = Math.floor(Math.random() * 16777215).toString(16);
-            const uyariEmbed = {
-                color: parseInt(rastgeleRenk, 16),
-                title: '🚫 Küfür Yasak!',
-                description: `${message.author}, bu sunucuda küfür veya argo kullanımı yasaktır!`,
-                thumbnail: { url: 'https://cdn.discordapp.com/emojis/776713577452273706.png?v=1' },
-                footer: { text: `${message.author.username} uyarıldı.`, icon_url: message.author.displayAvatarURL({ dynamic: true }) },
-                timestamp: new Date()
-            };
-            const uyariMesaji = await message.channel.send({ embeds: [uyariEmbed], allowedMentions: { repliedUser: false } });
-            setTimeout(() => { uyariMesaji.delete().catch(() => {}); }, 5000);
-            return;
-        } catch (error) {
-            console.error('Mesaj silme yetki hatası:', error);
+            // 1. Tam kelime eşleşmesi
+            if (kelimeler.includes(normKufur)) return true;
+
+            // 2. Cümle / Parça eşleşmesi
+            if (normMesaj.includes(normKufur) || noktasizMesaj.includes(normKufur)) return true;
+
+            // 3. 3 harften uzun küfürlerde birleşik kontrol (örneğin a.m.k veya a m k)
+            if (normKufur.length >= 3 && birlesikMesaj.includes(normKufur)) return true;
+
+            return false;
+        });
+
+        if (kufurVarMi) {
+            try {
+                await message.delete();
+                const rastgeleRenk = Math.floor(Math.random() * 16777215).toString(16);
+                const uyariEmbed = {
+                    color: parseInt(rastgeleRenk, 16),
+                    title: '🚫 Küfür Yasak!',
+                    description: `${message.author}, bu sunucuda küfür veya argo kullanımı yasaktır!`,
+                    thumbnail: { url: 'https://cdn.discordapp.com/emojis/776713577452273706.png?v=1' },
+                    footer: { text: `${message.author.username} uyarıldı.`, icon_url: message.author.displayAvatarURL({ dynamic: true }) },
+                    timestamp: new Date()
+                };
+                const uyariMesaji = await message.channel.send({ embeds: [uyariEmbed], allowedMentions: { repliedUser: false } });
+                setTimeout(() => { uyariMesaji.delete().catch(() => {}); }, 5000);
+                return;
+            } catch (error) {
+                console.error('Mesaj silme yetki hatası:', error);
+            }
         }
     }
 
     // SİSTEM D: Normal Komutlar
-    if (hamMesaj.toLowerCase().startsWith('y!')) {
+    if (hamKucuk.startsWith('y!')) {
         const args = hamMesaj.slice(2).trim().split(/ +/);
         const commandName = args.shift().toLowerCase();
 
@@ -245,9 +272,8 @@ client.on('messageCreate', async (message) => {
     const botaYanitVerildiMi = message.reference && message.referencedMessage && message.referencedMessage.author.id === client.user.id;
 
     if (botEtiketlendiMi || botaYanitVerildiMi) {
-        if (hamMesaj.toLowerCase().startsWith('y!')) return;
+        if (hamKucuk.startsWith('y!')) return;
 
-        // Cooldown kontrolü
         const simdi = Date.now();
         const sonKullanim = aiCooldowns.get(message.author.id) || 0;
         if (simdi - sonKullanim < 4000) {
