@@ -2,7 +2,8 @@ const express = require('express');
 const cors = require('cors');
 
 const app = express();
-
+const consoleRouter = require('./console.js');
+app.use('/console', consoleRouter);
 // github pages ve yerel testler için cors izni
 app.use(cors({
   origin: ['https://trserver-inc.github.io', 'http://localhost:3000']
