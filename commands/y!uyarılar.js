@@ -7,23 +7,23 @@ module.exports = {
     description: 'Kullanıcının uyarı geçmişini ve toplam uyarısını gösterir.',
     async execute(message, args, client) {
         const hedef = message.mentions.members.first() || message.guild.members.cache.get(args[0]) || message.member;
-        const dbPath = path.join(__dirname, '../database.json');
+        const uyarilarPath = path.join(__dirname, '../data/uyarilar.json');
 
-        if (!fs.existsSync(dbPath)) {
+        if (!fs.existsSync(uyarilarPath)) {
             return message.reply(`**${hedef.user.tag}** kullanıcısının hiç uyarısı bulunmuyor kanka!`);
         }
 
-        let dbData = {};
+        let uyarilarData = {};
         try {
-            dbData = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+            uyarilarData = JSON.parse(fs.readFileSync(uyarilarPath, 'utf8'));
         } catch (err) {
-            dbData = {};
+            uyarilarData = {};
         }
 
         const guildID = message.guild.id;
         const userID = hedef.id;
 
-        const kullaniciUyarilari = dbData.uyarilar?.[guildID]?.[userID] || [];
+        const kullaniciUyarilari = uyarilarData[guildID]?.[userID] || [];
 
         if (kullaniciUyarilari.length === 0) {
             return message.reply(`**${hedef.user.tag}** kullanıcısının hiç uyarısı bulunmuyor kanka!`);
