@@ -4,40 +4,50 @@ const path = require('path');
 
 module.exports = {
     name: 'mesajsayım',
-    description: 'Etiketlenen kişinin veya kendinizin mesaj sayısını gösterir.',
+    description: 'sunucudaki mesaj istatistiklerinizi gösterir.',
     async execute(message, args, client) {
-        const hedefKullanici = message.mentions.users.first() || message.author;
-        const mesajDataPath = path.join(process.cwd(), 'mesaj-data.json');
+        const dataPath = path.join(process.cwd(), 'data', 'mesaj-data.json');
 
-        if (!fs.existsSync(mesajDataPath)) {
-            return message.reply('henüz hiç mesaj verisi kaydedilmedi kanka!');
+        if (!fs.existsSync(dataPath)) {
+            return message.reply('henüz kaydedilmiş herhangi bir mesaj verisi yok!');
         }
 
-        const mesajData = JSON.parse(fs.readFileSync(mesajDataPath, 'utf8'));
-        const guildData = mesajData[message.guild.id] || {};
-        const userData = guildData[hedefKullanici.id] || { toplam: 0, haftalik: {} };
+        let mesajData = {};
+        try {
+            const rawData = fs.readFileSync(dataPath, 'utf8');
+            mesajData = JSON.parse(rawData);
+        } catch (e) {
+            return message.reply('mesaj verisi okunurken bir hata oluştu!');
+        }
 
-        // Mevcut haftayı hesapla
+        const guildData = mesajData[message.guild.id];
+        if (!guildData || !guildData[message.author.id]) {
+            return message.reply('bu sunucuda henüz kayıtlı bir mesaj verin bulunmuyor kanka!');
+        }
+
+        const userData = guildData[message.author.id];
+        const toplamMesaj = userData.toplam || 0;
+
+        // bu haftanın anahtarını hesapla
         const bugun = new Date();
         const d = new Date(Date.UTC(bugun.getFullYear(), bugun.getMonth(), bugun.getDate()));
         const dayNum = d.getUTCDay() || 7;
         d.setUTCDate(d.getUTCDate() + 4 - dayNum);
         const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
         const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-        const haftaKey = `${d.getUTCFullYear()}-${weekNo}`;
+        const buHaftaKey = `${d.getUTCFullYear()}-${weekNo}`;
 
-        const haftalikMesaj = (userData.haftalik && userData.haftalik[haftaKey]) ? userData.haftalik[haftaKey] : 0;
+        const haftalikMesaj = (userData.haftalik && userData.haftalik[buHaftaKey]) ? userData.haftalik[buHaftaKey] : 0;
 
         const embed = new EmbedBuilder()
-            .setTitle(`💬 Mesaj İstatistikleri`)
+            .setTitle(`📊 ${message.author.username} - Mesaj İstatistikleri`)
             .setColor('#3b82f6')
-            .setThumbnail(hedefKullanici.displayAvatarURL({ dynamic: true }))
+            .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
             .addFields(
-                { name: 'Kullanıcı', value: `${hedefKullanici}`, inline: true },
-                { name: 'Toplam Mesaj', value: `\`${userData.toplam}\``, inline: true },
-                { name: 'Bu Haftaki Mesaj', value: `\`${haftalikMesaj}\``, inline: true }
+                { name: '💬 Toplam Mesaj', value: `**${toplamMesaj}** mesaj`, inline: true },
+                { name: '📅 Bu Haftaki Mesaj', value: `**${haftalikMesaj}** mesaj`, inline: true }
             )
-            .setFooter({ text: `${message.guild.name} • Mesaj Sayacı` })
+            .setFooter({ text: `${message.guild.name} sohbet analizi` })
             .setTimestamp();
 
         return message.reply({ embeds: [embed] });
