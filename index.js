@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 require('./server.js');
+app.set('discordClient', client);
 require('dotenv').config();
 
 // --- 1. BOT KURULUMU VE INTENTLER ---
