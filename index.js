@@ -3,8 +3,6 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
-require('./server.js');
-app.set('discordClient', client);
 require('dotenv').config();
 
 // --- 1. BOT KURULUMU VE INTENTLER ---
@@ -19,6 +17,10 @@ const client = new Client({
     ],
     partials: [Partials.Channel]
 });
+
+// SERVER VE CONSOLE PANELİ BAGLANTISI (SIRA DÜZELTİLDİ)
+const app = require('./server.js');
+app.set('discordClient', client);
 
 client.commands = new Collection();
 const aiCooldowns = new Map();
@@ -38,7 +40,6 @@ function kufurleriYukle() {
         if (fs.existsSync(kufurlerPath)) {
             const rawData = fs.readFileSync(kufurlerPath, 'utf8');
             const parsed = JSON.parse(rawData);
-            // hem düz dizi hem de { "kufurler": [...] } yapısını destekler
             kufurlerListesi = Array.isArray(parsed) ? parsed : (parsed.kufurler || []);
             console.log(`[SİSTEM] ${kufurlerListesi.length} adet küfür hafızaya yüklendi.`);
         } else {
@@ -148,12 +149,10 @@ client.on('messageCreate', async (message) => {
     const hamMesaj = message.content ? message.content.trim() : "";
     if (!hamMesaj) return;
 
-    // MESAJ SAYACINA KAYDET
     if (message.guild) {
         mesajKaydet(message.guild.id, message.author.id);
     }
 
-    // --- ÖZEL BÖLÜM: AFK SİSTEMİ KONTROLLERİ ---
     const afkCommand = client.commands.get('afk');
     if (afkCommand && afkCommand.afkMap) {
         const afkMap = afkCommand.afkMap;
@@ -196,7 +195,6 @@ client.on('messageCreate', async (message) => {
         }
     }
 
-    // --- ÖZEL BÖLÜM: DM YAPAY ZEKA ---
     if (!message.guild) {
         const simdi = Date.now();
         const sonKullanim = aiCooldowns.get(message.author.id) || 0;
@@ -229,7 +227,6 @@ client.on('messageCreate', async (message) => {
 
     const hamKucuk = hamMesaj.toLowerCase();
 
-    // --- ÖNCELİKLİ SİSTEM 1: NORMAL KOMUTLAR (ÖNCE KOMUTA BAKILIR) ---
     if (hamKucuk.startsWith('y!')) {
         const args = hamMesaj.slice(2).trim().split(/ +/);
         const commandName = args.shift().toLowerCase();
@@ -245,12 +242,10 @@ client.on('messageCreate', async (message) => {
         }
     }
 
-    // SİSTEM A: "sa" Selam Sistemi
     if (hamKucuk === 'sa' || hamKucuk === 's.a' || hamKucuk === 'selamun aleyküm' || hamKucuk === 'selamün aleyküm') {
         return message.reply('Aleyküm Selam, hoş geldin!');
     }
 
-    // SİSTEM B: LINK / REKLAM ENGELLEYİCİ
     if (fs.existsSync(linkEngelConfigPath)) {
         try {
             const linkConfig = JSON.parse(fs.readFileSync(linkEngelConfigPath, 'utf8'));
@@ -272,7 +267,6 @@ client.on('messageCreate', async (message) => {
         }
     }
 
-    // SİSTEM C: TAM KONTROLLÜ KÜFÜR ENGELLEYİCİ
     if (kufurlerListesi.length > 0) {
         const normMesaj = metniNormalizeEt(hamMesaj);
         const noktasizMesaj = normMesaj.replace(/[^a-z0-9\s]/g, '');
@@ -314,7 +308,6 @@ client.on('messageCreate', async (message) => {
         }
     }
 
-    // SİSTEM E: SUNUCU İÇİ ETİKET/YANIT YAPAY ZEKA
     const botEtiketlendiMi = message.mentions.has(client.user) && !message.mentions.everyone;
     const botaYanitVerildiMi = message.reference && message.referencedMessage && message.referencedMessage.author.id === client.user.id;
 
