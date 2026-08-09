@@ -40,13 +40,13 @@ router.get('/', (req, res) => {
                 <h1>🎮 ytmt-bot render konsol paneli</h1>
                 <p style="text-align: center; color: #cbd5e1; font-size: 14px;">render aboneliği yükseltmeden doğrudan işlem yap!</p>
                 
-                <a href="/console/action?key=${SECRET_KEY}&cmd=restart" class="btn btn-restart">🔄 botu yeniden başlat (restart)</a>
-                <a href="/console/action?key=${SECRET_KEY}&cmd=shutdown" class="btn btn-shutdown">🛑 botu kapat (dokunma modu)</a>
+                <a href="/console/action?key=${SECRET_KEY}&cmd=restart" class="btn btn-restart">🔄 tam restart (baştan başlat)</a>
+                <a href="/console/action?key=${SECRET_KEY}&cmd=shutdown" class="btn btn-shutdown">🛑 tam shutdown (tamamen kapat)</a>
 
                 <div class="info-box">
                     <strong>💡 bilgi:</strong><br>
-                    • <b>restart:</b> hatayla sonlandırma sinyali gönderir. render bunu çökme sanıp botu 5-10 sn içinde otomatik tekrar ayağa kaldırır.<br>
-                    • <b>shutdown:</b> botun discord bağlantısını ve servislerini tamamen keser, sunucu açık kalsa bile bot pasife geçer.
+                    • <b>tam restart:</b> render sunucusunu tetikler, bot 10 saniye içinde sıfırdan başlar.<br>
+                    • <b>tam shutdown:</b> botun discord bağlantısını koparır ve pasife alır. sen yeniden restart atana kadar bot kapalı kalır.
                 </div>
             </div>
         </body>
@@ -65,28 +65,30 @@ router.get('/action', (req, res) => {
     if (cmd === 'restart') {
         res.send(`
             <body style="background:#0f172a; color:#22c55e; font-family:Arial; text-align:center; padding-top:50px;">
-                <h2>🔄 bot yeniden başlatılıyor...</h2>
-                <p>render çöktü sanıp 5-10 saniye içinde botu tekrar kaldıracak.</p>
-                <script>setTimeout(() => { window.location.href = '/console?key=${SECRET_KEY}'; }, 6000);</script>
+                <h2>🔄 bot tamamen yeniden başlatılıyor...</h2>
+                <p>render süreci sonlandırdı, 10 saniye içinde sıfırdan ayağa kalkacak.</p>
+                <script>setTimeout(() => { window.location.href = '/console?key=${SECRET_KEY}'; }, 10000);</script>
             </body>
         `);
-        console.log('[KONSOL SİSTEMİ] web üzerinden restart komutu alındı. tetikleniyor...');
-        setTimeout(() => process.exit(1), 1000); // exit(1) veriyoruz ki render çöktü sanıp hemen RESTART atsın!
+        console.log('[KONSOL SİSTEMİ] web üzerinden FULL RESTART komutu alındı.');
+        setTimeout(() => process.exit(1), 1000); // render çöktü sanıp 10 sn sonra sıfırdan başlatacak
     } 
     else if (cmd === 'shutdown') {
         res.send(`
             <body style="background:#0f172a; color:#ef4444; font-family:Arial; text-align:center; padding-top:50px;">
-                <h2>🛑 bot pasife alındı.</h2>
-                <p>discord bağlantısı koparıldı. render paneline girmeden bot işlem yapmaz.</p>
+                <h2>🛑 bot tamamen kapatıldı!</h2>
+                <p>discord istemcisi kapatıldı ve bot çevrimdışı yapıldı. geri açmak için bu panelden restart atabilirsin.</p>
             </body>
         `);
-        console.log('[KONSOL SİSTEMİ] web üzerinden shutdown komutu alındı.');
+        console.log('[KONSOL SİSTEMİ] web üzerinden FULL SHUTDOWN komutu alındı. discord bağlantısı kesiliyor...');
         
-        // render süreci tamamen öldürmesin (yoksa auto-restart atar), onun yerine discord bot bağlantısını kapatıyoruz
-        if (req.app.get('discordClient')) {
-            req.app.get('discordClient').destroy();
+        // discord botunu tamamen kapatıyoruz (süreci öldürmüyoruz ki render 10 sn sonra tekrar açmasın)
+        const client = req.app.get('discordClient');
+        if (client) {
+            client.destroy();
+            console.log('[KONSOL SİSTEMİ] discord client başarıyla destroy edildi. bot çevrimdışı.');
         } else {
-            setTimeout(() => process.exit(0), 1000); // exit(0) olunca bazı durumlar haricinde render yeniden başlatmaz
+            console.log('[KONSOL SİSTEMİ] uyarı: discordClient express app içinde bulunamadı.');
         }
     } 
     else {
