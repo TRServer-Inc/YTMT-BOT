@@ -3,6 +3,7 @@ const cors = require('cors');
 
 const app = express();
 const consoleRouter = require('./console.js');
+app.set('discordClient', client);
 app.use('/console', consoleRouter);
 // github pages ve yerel testler için cors izni
 app.use(cors({
