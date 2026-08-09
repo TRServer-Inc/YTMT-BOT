@@ -2,7 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const { PermissionFlagsBits } = require('discord.js');
 
-const configPath = path.join(process.cwd(), 'linkengel-config.json');
+const dataDir = path.join(process.cwd(), 'data');
+const configPath = path.join(dataDir, 'linkengel-config.json');
 
 module.exports = {
     name: 'link-engel',
@@ -16,6 +17,10 @@ module.exports = {
 
         if (!secim || (secim !== 'aç' && secim !== 'ac' && secim !== 'kapat')) {
             return message.reply('Lütfen geçerli bir seçenek girin! Örnek: `y!link-engel aç` veya `y!link-engel kapat`');
+        }
+
+        if (!fs.existsSync(dataDir)) {
+            fs.mkdirSync(dataDir, { recursive: true });
         }
 
         let config = {};
