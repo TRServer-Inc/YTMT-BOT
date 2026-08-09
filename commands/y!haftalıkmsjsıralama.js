@@ -6,7 +6,7 @@ module.exports = {
     name: 'haftalıkmsjsıralama',
     description: 'Bu hafta en çok mesaj atan kullanıcıları sıralar.',
     async execute(message, args, client) {
-        const mesajDataPath = path.join(process.cwd(), 'mesaj-data.json');
+        const mesajDataPath = path.join(process.cwd(), 'data', 'mesaj-data.json');
 
         if (!fs.existsSync(mesajDataPath)) {
             return message.reply('henüz hiç mesaj verisi kaydedilmedi kanka!');
