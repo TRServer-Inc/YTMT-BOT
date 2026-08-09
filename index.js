@@ -22,30 +22,38 @@ const client = new Client({
 client.commands = new Collection();
 const aiCooldowns = new Map();
 
+// --- DATA KLASÖRÜ KONTROLÜ VE OLUŞTURMA ---
+const dataDir = path.join(process.cwd(), 'data');
+if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+}
+
 // --- 2. AYAR DOSYALARI VE HAFIZA HAZIRLIĞI ---
-const kufurlerPath = path.join(process.cwd(), 'kufurler.json');
+const kufurlerPath = path.join(dataDir, 'kufurler.json');
 let kufurlerListesi = [];
 
 function kufurleriYukle() {
     try {
         if (fs.existsSync(kufurlerPath)) {
             const rawData = fs.readFileSync(kufurlerPath, 'utf8');
-            kufurlerListesi = JSON.parse(rawData);
+            const parsed = JSON.parse(rawData);
+            // hem düz dizi hem de { "kufurler": [...] } yapısını destekler
+            kufurlerListesi = Array.isArray(parsed) ? parsed : (parsed.kufurler || []);
             console.log(`[SİSTEM] ${kufurlerListesi.length} adet küfür hafızaya yüklendi.`);
         } else {
-            console.log('[UYARI] kufurler.json dosyası bulunamadı!');
+            console.log('[UYARI] data/kufurler.json dosyası bulunamadı!');
         }
     } catch (e) {
-        console.error('[HATA] kufurler.json okuma hatası:', e);
+        console.error('[HATA] data/kufurler.json okuma hatası:', e);
     }
 }
 kufurleriYukle();
 
-const hgbbConfigPath = path.join(process.cwd(), 'hgbb-config.json');
-const linkEngelConfigPath = path.join(process.cwd(), 'linkengel-config.json');
+const hgbbConfigPath = path.join(dataDir, 'hgbb-config.json');
+const linkEngelConfigPath = path.join(dataDir, 'linkengel-config.json');
 
 // --- MESAJ SAYACI VERİTABANI HAFIZASI ---
-const mesajDataPath = path.join(process.cwd(), 'mesaj-data.json');
+const mesajDataPath = path.join(dataDir, 'mesaj-data.json');
 let mesajData = {};
 
 if (fs.existsSync(mesajDataPath)) {
@@ -123,7 +131,7 @@ function metniNormalizeEt(str) {
     return str
         .replace(/İ/g, 'i')
         .replace(/I/g, 'ı')
-        .toLowerCase()
+        .toLocaleLowerCase('tr-TR')
         .replace(/ğ/g, 'g')
         .replace(/ü/g, 'u')
         .replace(/ş/g, 's')
