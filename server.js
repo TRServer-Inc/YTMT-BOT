@@ -4,6 +4,7 @@ const cors = require('cors');
 const app = express();
 const consoleRouter = require('./console.js');
 app.use('/console', consoleRouter);
+
 // github pages ve yerel testler için cors izni
 app.use(cors({
   origin: ['https://trserver-inc.github.io', 'http://localhost:3000']
@@ -30,3 +31,5 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`[SUNUCU] Web servisi ${PORT} portunda başarıyla başlatıldı.`);
 });
+
+module.exports = app;
