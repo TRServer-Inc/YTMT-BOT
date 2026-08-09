@@ -93,10 +93,10 @@ if (fs.existsSync(commandsPath)) {
 // --- YAPAY ZEKA SORGULAMA FONKSİYONU ---
 async function geminiCevapAl(soru) {
     const apiKey = process.env.GEMINI_API_KEY;
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const bodyPayload = {
-        system_instruction: {
+        systemInstruction: {
             parts: [
                 { text: "Sen cana yakın, esprili, Roblox ve Minecraft oyunlarını çok iyi bilen fırlama bir Discord botusun. Lafı uzatmadan, kendini tekrar etmeden direkt olarak net, emojili ve kısa bir cevap ver." }
             ]
@@ -445,16 +445,16 @@ client.once('ready', () => {
     let index = 0;
 
     const durumuGuncelle = () => {
-        const mevcut = durumlar[index];
+        const durum = durumlar[index];
         client.user.setPresence({
-            activities: [{ name: mevcut.name, type: mevcut.type }],
+            activities: [{ name: durum.name, type: durum.type }],
             status: 'online'
         });
         index = (index + 1) % durumlar.length;
     };
 
     durumuGuncelle();
-    setInterval(durumuGuncelle, 10000);
+    setInterval(durumuGuncelle, 15000);
 });
 
 client.login(process.env.TOKEN);
