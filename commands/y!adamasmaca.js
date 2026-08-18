@@ -1,201 +1,214 @@
 const { EmbedBuilder } = require('discord.js');
 
-// dev kelime ve ipucu veritabanı
-const kelimeHavuzu = [
-  // oyunlar
-  { kelime: "MINECRAFT", ipucu: "bloklardan oluşan popüler hayatta kalma oyunu" },
-  { kelime: "ROBLOX", ipucu: "kullanıcıların kendi oyunlarını geliştirebildiği platform" },
-  { kelime: "UNDERTALE", ipucu: "canavarlarla dost olabildiğin efsanevi piksel RPG oyunu" },
-  { kelime: "VALORANT", ipucu: "riot games yapımı ajanlı ve yetenekli FPS oyunu" },
-  { kelime: "FORTNITE", ipucu: "yapı yapmalı ve dans etmeli battle royale oyunu" },
-  { kelime: "GTA", ipucu: "açık dünyada çete ve araba görevleri yaptığın kült oyun serisi" },
-  { kelime: "POKEMON", ipucu: "sevimli yaratıkları yakalayıp dövüştürdüğün Seri" },
-  { kelime: "TETRIS", ipucu: "yukarıdan düşen blokları sıraya dizdiğin klasik oyun" },
-  { kelime: "PACMAN", ipucu: "labirentte hayaletlerden kaçıp sarı noktaları yediğin oyun" },
+// devasa genişletilmiş kelime havuzu
+const kelimeler = {
+    kolay: [
+        // hayvanlar
+        'kedi', 'köpek', 'kuş', 'balık', 'aslan', 'kaplan', 'ayı', 'koyun', 'keçi', 'at', 'inek', 'tavuk', 'ördek', 'fare', 'tilki', 'kurt', 'maymun', 'yılan', 'arı', 'sinek',
+        // meyve ve yiyecekler
+        'elma', 'armut', 'muz', 'çilek', 'erik', 'kiraz', 'vişne', 'karpuz', 'kavun', 'üzüm', 'ekmek', 'peynir', 'süt', 'çorba', 'pilav', 'makarna', 'pasta', 'börek', 'pizza',
+        // günlük eşyalar & nesneler
+        'masa', 'sandalye', 'kapı', 'pencere', 'kalem', 'defter', 'kitap', 'çanta', 'saat', 'ayna', 'tarak', 'halı', 'perde', 'kutu', 'şişe', 'bardak', 'tabak', 'kaşık', 'çatal', 'bıçak',
+        // doğa & çevre
+        'deniz', 'güneş', 'bulut', 'yağmur', 'toprak', 'ağaç', 'çiçek', 'orman', 'ırmak', 'nehir', 'göl', 'rüzgar', 'taş', 'kum',
+        // genel kavramlar
+        'okul', 'sınıf', 'araba', 'tren', 'gemi', 'uçak', 'ev', 'oda', 'park', 'bahçe', 'şehir', 'köy', 'insan', 'çocuk', 'anne', 'baba'
+    ],
+    orta: [
+        // teknoloji & eşyalar
+        'bilgisayar', 'kulaklık', 'televizyon', 'buzdolabı', 'çamaşır makinesi', 'mikrodalga', 'hoparlör', 'projektör', 'fotokopi', 'kameralar', 'mikrofon', 'süpreci', 'klavye', 'farelik',
+        // meslekler & kavramlar
+        'öğretmen', 'mühendis', 'doktor', 'hemşire', 'avukat', 'mimar', 'gazeteci', 'astronot', 'itfaiyeci', 'polis', 'şoför', 'eczacı', 'psikolog', 'yazılımcı', 'sanatçı',
+        // coğrafya & bilim
+        'türkiye', 'okyanus', 'yanardağ', 'atmosfer', 'gezegeni', 'galaksi', 'ekosistem', 'biyoloji', 'matematik', 'geometri', 'felsefe', 'edebiyat', 'tarihsel',
+        // soyut & genel kelimeler
+        'özgürlük', 'gelişim', 'arkadaşlık', 'samimiyet', 'kalabalık', 'tecrübe', 'mücadele', 'başarı', 'cesaret', 'merhamet', 'yolculuk', 'gökyüzü', 'kütüphane', 'tiyatro', 'eğlence'
+    ],
+    zor: [
+        // uzun & karmaşık türkçe kelimeler
+        'programlama', 'elektrofizyoloji', 'mikroorganizma', 'asenkronize', 'deoksiribonükleik', 'infrastruktür', 'muvaffakiyetsizleştiricileştiriverme',
+        'çekoslovakyalılaştırabildiklerimizdenmişsinizcesine', 'kötüleştiricilik', 'şahsiyetsizleştirilmek', 'demokratikleştirilme', 'kapitalistleşmek',
+        'sosyalleştirilebilmek', 'özelleştirilemeyenler', 'milletlerarasılaştırılanlar', 'kavramsallaştırabilmek', 'gerçekleştirilemeyebilir',
+        // nadir & ağır kavramlar
+        'biyokimya', 'psikoterapi', 'spekülasyon', 'konfigürasyon', 'transformasyon', 'manipülasyon', 'organizasyon', 'standardizasyon',
+        'kardiyoloji', 'nörolojik', 'anesteziyoloji', 'enternasyonal', 'paralelleştirme', 'yüzeyselleştirme', 'çerçöpleştirme'
+    ]
+};
 
-  // spor & futbol
-  { kelime: "GALATASARAY", ipucu: "sarı-kırmızı renklere sahip uefa kupalı ilk türk takımı" },
-  { kelime: "STADYUM", ipucu: "binlerce taraftarın maç izlediği devasa spor alanı" },
-  { kelime: "SAMPIONLUK", ipucu: "bir ligi veya turnuvayı zirvede bitirme başarısı" },
-  { kelime: "TARAFTAR", ipucu: "takımını tribünde tutkuyla destekleyen topluluk" },
-  { kelime: "PENALTI", ipucu: "ceza sahası içinde yapılan ihlal sonucu verilen kale atışı" },
-  { kelime: "KAPTAIN", ipucu: "sahada takıma liderlik eden oyuncu" },
-  { kelime: "BASKETBOL", ipucu: "pota içine turuncu topu atmaya çalıştığın spor" },
-  { kelime: "VOLEYBOL", ipucu: "file üzerinden topu karşı sahaya düşürme sporu" },
-  { kelime: "STOPER", ipucu: "savunmanın göbeğinde görev yapan futbolcu" },
+const haklar = {
+    kolay: 8,
+    orta: 6,
+    zor: 4
+};
 
-  // coğrafya & şehirler
-  { kelime: "TURKIYE", ipucu: "asya ve avrupa kıtalarını birbirine bağlayan eşsiz ülke" },
-  { kelime: "ISTANBUL", ipucu: "iki kıta üzerine kurulu, boğazı ile ünlü tarihi metropol" },
-  { kelime: "ANKARA", ipucu: "türkiye cumhuriyeti'nin başkenti" },
-  { kelime: "IZMIR", ipucu: "ege'nin incisi olarak bilinen sahil şehri" },
-  { kelime: "ANTALYA", ipucu: "akdeniz kıyısındaki ünlü turizm şehri" },
-  { kelime: "EKVATOR", ipucu: "dünyayı kuzey ve güney olarak ikiye bölen hayali çizgi" },
-  { kelime: "OKYANUS", ipucu: "kıtaları birbirinden ayıran devasa su birikintisi" },
-  { kelime: "YANARDAG", ipucu: "içinden lav ve kül püskürten dağ" },
-  { kelime: "BUZUL", ipucu: "kutuplarda ve yüksek dağlarda donmuş dev kar kütlesi" },
-  { kelime: "JAPONYA", ipucu: "doğuda bulunan, teknoloji ve animeleriyle ünlü ada ülkesi" },
-
-  // bilim & doğa & evren
-  { kelime: "GALAKSI", ipucu: "milyarlarca yıldız ve gezegenden oluşan devasa gök sistemi" },
-  { kelime: "ASTRONOT", ipucu: "uzay araştırmaları için uzaya giden insan" },
-  { kelime: "YERCEKIMI", ipucu: "dünyanın nesneleri kendine doğru çekme kuvveti" },
-  { kelime: "KARADELIK", ipucu: "ışığın bile kaçamadığı çok güçlü çekim alanı olan gök cismi" },
-  { kelime: "METEOR", ipucu: "uzaydan atmosfere girip yanan gök taşı" },
-  { kelime: "TELESKOP", ipucu: "uzaydaki gök cisimlerini incelemeye yarayan optik alet" },
-  { kelime: "ATMOSFER", ipucu: "gezegeni saran gaz tabakası" },
-  { kelime: "DOLUNAY", ipucu: "ay'ın tam bir daire şeklinde tamamen parladığı evre" },
-
-  // günlük yaşam & nesneler
-  { kelime: "BILGISAYAR", ipucu: "ekranı, klavyesi ve işlemcisi olan dijital çalışma cihazı" },
-  { kelime: "TELEFON", ipucu: "cebimizde taşıdığımız iletişim ve internet cihazı" },
-  { kelime: "KULAKLIK", ipucu: "müziği sadece kendimizin duymasını sağlayan aksesuar" },
-  { kelime: "TELEVIZYON", ipucu: "salonun ortasında duran yayın izleme ekranı" },
-  { kelime: "KAHVE", ipucu: "sabahları uyanmak ve odaklanmak için içilen sıcak içecek" },
-  { kelime: "KUTUPHANE", ipucu: "binlerce kitabın bulunduğu sessiz çalışma ortamı" },
-  { kelime: "SANDALYE", ipucu: "masanın kenarına koyup üzerine oturduğumuz eşya" },
-  { kelime: "KAMERA", ipucu: "fotoğraf ve video çekmeye yarayan cihaz" },
-  { kelime: "MIKROFON", ipucu: "sesi alıp hoparlöre veya bilgisayara aktaran araç" },
-
-  // genel kültür & kavramlar
-  { kelime: "MEDENIYET", ipucu: "bir toplumun ulaştığı gelişmişlik seviyesi" },
-  { kelime: "GIZEMLI", ipucu: "sırrı henüz çözülememiş saklı olay" },
-  { kelime: "MACERA", ipucu: "heyecanlı ve riskli yolculuk veya deneyim" },
-  { kelime: "OZGURLUK", ipucu: "kendi iradenle kısıtlanmadan hareket edebilme durumu" },
-  { kelime: "TEKNOLOJI", ipucu: "insan hayatını kolaylaştıran bilimsel yenilikler" },
-  { kelime: "GELECEK", ipucu: "şimdi'den sonra yaşanacak olan zaman dilimi" },
-  { kelime: "EFSANE", ipucu: "dilden dile dolaşan olağanüstü hikaye veya kişi" },
-  { kelime: "SANATKAR", ipucu: "resim, müzik gibi alanlarda eser üreten yetenekli kişi" },
-  { kelime: "KUTLAMA", ipucu: "özel bir günü parti veya etkinlikle anma" }
-];
-
-const cizimler = [
-  "```\n  +---+\n  |   |\n      |\n      |\n      |\n      |\n========```",
-  "```\n  +---+\n  |   |\n  O   |\n      |\n      |\n      |\n========```",
-  "```\n  +---+\n  |   |\n  O   |\n  |   |\n      |\n      |\n========```",
-  "```\n  +---+\n  |   |\n  O   |\n /|   |\n      |\n      |\n========```",
-  "```\n  +---+\n  |   |\n  O   |\n /|\\  |\n      |\n      |\n========```",
-  "```\n  +---+\n  |   |\n  O   |\n /|\\  |\n /    |\n      |\n========```",
-  "```\n  +---+\n  |   |\n  O   |\n /|\\  |\n / \\  |\n========```"
-];
+// aktif oyunları tutacağımız obje
+const aktifOyunlar = new Map();
 
 module.exports = {
-  name: 'adamasmaca',
-  aliases: ['y!adamasmaca'],
-  description: 'adam asmaca oyunu başlatır.',
-  async execute(message, args) {
-    const secilenObje = kelimeHavuzu[Math.floor(Math.random() * kelimeHavuzu.length)];
-    const secilenKelime = secilenObje.kelime;
-    const ipucuMetni = secilenObje.ipucu;
-
-    let tahminEdilenler = [];
-    let yanlisHak = 0;
-    let ipucuKullanildi = false;
-    let aktifIpucu = "Henüz istenmedi.";
-    const maxHak = 6;
-
-    const kelimeGosterim = () => {
-      return secilenKelime
-        .split('')
-        .map(harf => (tahminEdilenler.includes(harf) ? harf : '\\_'))
-        .join(' ');
-    };
-
-    const embed = new EmbedBuilder()
-      .setTitle('🎮 Adam Asmaca Oyunu')
-      .setColor('#6366f1')
-      .setDescription(`${cizimler[yanlisHak]}\n\n**Kelime:** ${kelimeGosterim()}\n\n💡 **İpucu almak için:** \`ipucu\` yazabilirsiniz (-1 hak eksiltir).\nHarf veya tüm kelimeyi tahmin etmek için chata yazın!`)
-      .setFooter({ text: `Kalan Hak: ${maxHak - yanlisHak} | Oyuncu: ${message.author.username}` });
-
-    const oyunMesaji = await message.channel.send({ embeds: [embed] });
-
-    const filter = m => m.author.id === message.author.id;
-    const collector = message.channel.createMessageCollector({ filter, time: 90000 });
-
-    collector.on('collect', async m => {
-      const girdi = m.content.toUpperCase('tr-TR').trim();
-
-      if (m.deletable) m.delete().catch(() => {});
-
-      // ipucu alma senaryosu
-      if (girdi === 'IPUCU' || girdi === 'İPUCU') {
-        if (!ipucuKullanildi) {
-          ipucuKullanildi = true;
-          aktifIpucu = ipucuMetni;
-          yanlisHak++;
+    name: 'adamasmaca',
+    description: 'kategorili, ipucu sistemli ve devasa kelime hazneli adam asmaca oyunu.',
+    aliases: ['adam-asmaca'],
+    async execute(message, args) {
+        if (aktifOyunlar.has(message.author.id)) {
+            return message.reply('zaten devam eden bir adam asmaca oyunun var!');
         }
-      } 
-      // tüm kelimeyi tahmin etme senaryosu
-      else if (girdi.length > 1) {
-        if (girdi === secilenKelime) {
-          collector.stop('kazandi');
-          const kazandiEmbed = new EmbedBuilder()
-            .setTitle('🔥 İNANILMAZ! Tekte Bildin!')
-            .setColor('#22c55e')
-            .setDescription(`Kelimeyi doğru tahmin ettin: **${secilenKelime}**\n\n${cizimler[yanlisHak]}`)
-            .setFooter({ text: `${message.author.username} kralsın!` });
 
-          return oyunMesaji.edit({ embeds: [kazandiEmbed] });
-        } else {
-          yanlisHak += 2;
+        let zorluk = args[0] ? args[0].toLowerCase() : 'orta';
+
+        if (!['kolay', 'orta', 'zor'].includes(zorluk)) {
+            return message.reply('lütfen geçerli bir zorluk seviyesi belirt! (`kolay`, `orta`, `zor`)\nörnek: `y!adamasmaca zor`');
         }
-      } 
-      // tek harf tahmini senaryosu
-      else if (girdi.length === 1) {
-        if (tahminEdilenler.includes(girdi)) return;
 
-        tahminEdilenler.push(girdi);
+        const havuz = kelimeler[zorluk];
+        const secilenKelime = havuz[Math.floor(Math.random() * havuz.length)].toLowerCase();
+        let kalanHak = haklar[zorluk];
+        const tahminEdilenHarfler = new Set();
+        let ipucuKullanildi = false;
+        
+        let gizliKelime = Array.from(secilenKelime).map(ch => ch === ' ' ? ' ' : '_');
 
-        if (!secilenKelime.includes(girdi)) {
-          yanlisHak++;
-        }
-      }
+        aktifOyunlar.set(message.author.id, true);
 
-      // kazanma kontrolü
-      const kazandi = secilenKelime.split('').every(h => tahminEdilenler.includes(h));
+        const embed = new EmbedBuilder()
+            .setTitle('🎯 adam asmaca başladı!')
+            .setColor('#3498db')
+            .setDescription(`
+**zorluk:** \`${zorluk.toUpperCase()}\`
+**kalan hak:** \`${kalanHak}\`
+**kelime:** \`${gizliKelime.join(' ')}\`
 
-      if (kazandi) {
-        collector.stop('kazandi');
-        const kazandiEmbed = new EmbedBuilder()
-          .setTitle('🎉 Tebrikler, Kazandınız!')
-          .setColor('#22c55e')
-          .setDescription(`Kelimeyi doğru bildiniz: **${secilenKelime}**\n\n${cizimler[yanlisHak]}`)
-          .setFooter({ text: `${message.author.username} kazandı!` });
+*tahmin etmek için harf yazabilirsin.*
+*ipucu almak için **"ipucu"** yazabilirsin (1 hak düşer, 1 defa kullanılır).*
+            `)
+            .setFooter({ text: 'oyunu iptal etmek için "iptal" yazabilirsin.' });
 
-        return oyunMesaji.edit({ embeds: [kazandiEmbed] });
-      }
+        const oyunMesaji = await message.channel.send({ embeds: [embed] });
 
-      // kaybetme kontrolü
-      if (yanlisHak >= maxHak) {
-        collector.stop('kaybetti');
-        const kaybettiEmbed = new EmbedBuilder()
-          .setTitle('💀 Oyun Bitti!')
-          .setColor('#ef4444')
-          .setDescription(`Maalesef hakların bitti! Doğru kelime: **${secilenKelime}**\n\n${cizimler[6]}`)
-          .setFooter({ text: 'Geçmiş olsun!' });
+        const filter = m => m.author.id === message.author.id;
+        const collector = message.channel.createMessageCollector({ filter, time: 600000 });
 
-        return oyunMesaji.edit({ embeds: [kaybettiEmbed] });
-      }
+        collector.on('collect', async m => {
+            const girdi = m.content.toLowerCase().trim();
 
-      // oyuna devam
-      const guncelEmbed = new EmbedBuilder()
-        .setTitle('🎮 Adam Asmaca Oyunu')
-        .setColor('#6366f1')
-        .setDescription(`${cizimler[yanlisHak]}\n\n**Kelime:** ${kelimeGosterim()}\n\nDenenen Harfler: ${tahminEdilenler.join(', ') || 'Yok'}\n💡 **İpucu:** ${aktifIpucu}`)
-        .setFooter({ text: `Kalan Hak: ${maxHak - yanlisHak} | Oyuncu: ${message.author.username}` });
+            // oyunu iptal etme
+            if (girdi === 'iptal') {
+                collector.stop('iptal');
+                return message.channel.send('oyun iptal edildi.');
+            }
 
-      oyunMesaji.edit({ embeds: [guncelEmbed] });
-    });
+            // ipucu sistemi
+            if (girdi === 'ipucu') {
+                if (ipucuKullanildi) {
+                    return message.channel.send('zaten bu oyunda ipucu hakkını kullandın!').then(msg => {
+                        setTimeout(() => msg.delete().catch(() => {}), 3000);
+                    });
+                }
 
-    collector.on('end', (collected, reason) => {
-      if (reason === 'time') {
-        const zamanDolduEmbed = new EmbedBuilder()
-          .setTitle('⏰ Süre Doldu!')
-          .setColor('#f59e0b')
-          .setDescription(`Zaman dolduğu için oyun iptal edildi. Doğru kelime: **${secilenKelime}**`);
+                if (kalanHak <= 1) {
+                    return message.channel.send('son 1 hakkın kaldığı için ipucu kullanamazsın!').then(msg => {
+                        setTimeout(() => msg.delete().catch(() => {}), 3000);
+                    });
+                }
 
-        oyunMesaji.edit({ embeds: [zamanDolduEmbed] });
-      }
-    });
-  }
+                // henüz açılmamış harfleri bul
+                const acilmamisHarfler = [];
+                for (let i = 0; i < secilenKelime.length; i++) {
+                    if (gizliKelime[i] === '_') {
+                        acilmamisHarfler.push(secilenKelime[i]);
+                    }
+                }
+
+                if (acilmamisHarfler.length === 0) return;
+
+                // rastgele bir harf seç ve aç
+                const rastgeleIpucuHarf = acilmamisHarfler[Math.floor(Math.random() * acilmamisHarfler.length)];
+                tahminEdilenHarfler.add(rastgeleIpucuHarf);
+                ipucuKullanildi = true;
+                kalanHak--; // ipucu cezası olarak 1 hak eksilt
+
+                for (let i = 0; i < secilenKelime.length; i++) {
+                    if (secilenKelime[i] === rastgeleIpucuHarf) {
+                        gizliKelime[i] = rastgeleIpucuHarf;
+                    }
+                }
+
+                message.channel.send(`💡 **ipucu:** Kelimede **"${rastgeleIpucuHarf.toUpperCase()}"** harfi var! (1 hak harcandı)`).then(msg => {
+                    setTimeout(() => msg.delete().catch(() => {}), 4000);
+                });
+
+                // ipucu sonrası kazandı mı kontrolü
+                if (!gizliKelime.includes('_')) {
+                    collector.stop('kazandi');
+                    const kazanEmbed = new EmbedBuilder()
+                        .setTitle('🎉 tebrikler, kazandın!')
+                        .setColor('#2ecc71')
+                        .setDescription(`kelimeyi doğru bildin: **${secilenKelime}**\n**zorluk:** \`${zorluk}\``);
+                    return oyunMesaji.edit({ embeds: [kazanEmbed] });
+                }
+            } else {
+                // harf tahmini kontrolü
+                if (girdi.length !== 1 || !/[a-zçğıöşü]/i.test(girdi)) {
+                    return;
+                }
+
+                if (tahminEdilenHarfler.has(girdi)) {
+                    return message.channel.send(`\`${girdi}\` harfini zaten tahmin etmiştin!`).then(msg => {
+                        setTimeout(() => msg.delete().catch(() => {}), 3000);
+                    });
+                }
+
+                tahminEdilenHarfler.add(girdi);
+
+                if (secilenKelime.includes(girdi)) {
+                    for (let i = 0; i < secilenKelime.length; i++) {
+                        if (secilenKelime[i] === girdi) {
+                            gizliKelime[i] = girdi;
+                        }
+                    }
+
+                    if (!gizliKelime.includes('_')) {
+                        collector.stop('kazandi');
+                        const kazanEmbed = new EmbedBuilder()
+                            .setTitle('🎉 tebrikler, kazandın!')
+                            .setColor('#2ecc71')
+                            .setDescription(`kelimeyi doğru bildin: **${secilenKelime}**\n**zorluk:** \`${zorluk}\``);
+                        return oyunMesaji.edit({ embeds: [kazanEmbed] });
+                    }
+                } else {
+                    kalanHak--;
+
+                    if (kalanHak <= 0) {
+                        collector.stop('kaybetti');
+                        const kaybetEmbed = new EmbedBuilder()
+                            .setTitle('💀 kaybettin!')
+                            .setColor('#e74c3c')
+                            .setDescription(`doğru kelime **${secilenKelime}** idi.\n**zorluk:** \`${zorluk}\``);
+                        return oyunMesaji.edit({ embeds: [kaybetEmbed] });
+                    }
+                }
+            }
+
+            // durumu güncelle
+            const guncelEmbed = new EmbedBuilder()
+                .setTitle('🎯 adam asmaca')
+                .setColor('#3498db')
+                .setDescription(`
+**zorluk:** \`${zorluk.toUpperCase()}\`
+**kalan hak:** \`${kalanHak}\`
+**kelime:** \`${gizliKelime.join(' ')}\`
+**denenen harfler:** ${Array.from(tahminEdilenHarfler).join(', ') || 'yok'}
+**ipucu durumu:** ${ipucuKullanildi ? '❌ kullanıldı' : '✅ kullanılabilir (1 hak eksiltir)'}
+                `)
+                .setFooter({ text: 'oyunu iptal etmek için "iptal", ipucu için "ipucu" yazabilirsin.' });
+
+            oyunMesaji.edit({ embeds: [guncelEmbed] });
+        });
+
+        collector.on('end', (collected, reason) => {
+            aktifOyunlar.delete(message.author.id);
+            if (reason === 'time') {
+                message.channel.send(`<@${message.author.id}>, süren dolduğu için adam asmaca oyunu sonlandırıldı.`);
+            }
+        });
+    }
 };
