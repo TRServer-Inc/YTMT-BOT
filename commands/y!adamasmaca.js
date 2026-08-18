@@ -1,37 +1,40 @@
 const { EmbedBuilder } = require('discord.js');
 
-// devasa genişletilmiş kelime havuzu
+// detaylı bilgi/ipucu içeren genişletilmiş kelime havuzu
 const kelimeler = {
     kolay: [
-        // hayvanlar
-        'kedi', 'köpek', 'kuş', 'balık', 'aslan', 'kaplan', 'ayı', 'koyun', 'keçi', 'at', 'inek', 'tavuk', 'ördek', 'fare', 'tilki', 'kurt', 'maymun', 'yılan', 'arı', 'sinek',
-        // meyve ve yiyecekler
-        'elma', 'armut', 'muz', 'çilek', 'erik', 'kiraz', 'vişne', 'karpuz', 'kavun', 'üzüm', 'ekmek', 'peynir', 'süt', 'çorba', 'pilav', 'makarna', 'pasta', 'börek', 'pizza',
-        // günlük eşyalar & nesneler
-        'masa', 'sandalye', 'kapı', 'pencere', 'kalem', 'defter', 'kitap', 'çanta', 'saat', 'ayna', 'tarak', 'halı', 'perde', 'kutu', 'şişe', 'bardak', 'tabak', 'kaşık', 'çatal', 'bıçak',
-        // doğa & çevre
-        'deniz', 'güneş', 'bulut', 'yağmur', 'toprak', 'ağaç', 'çiçek', 'orman', 'ırmak', 'nehir', 'göl', 'rüzgar', 'taş', 'kum',
-        // genel kavramlar
-        'okul', 'sınıf', 'araba', 'tren', 'gemi', 'uçak', 'ev', 'oda', 'park', 'bahçe', 'şehir', 'köy', 'insan', 'çocuk', 'anne', 'baba'
+        { kelime: 'kedi', ipucu: 'evcil, miyavlayan dört ayaklı bir hayvan' },
+        { kelime: 'köpek', ipucu: 'sadakat dizisiyle bilinen, havlayan evcil hayvan' },
+        { kelime: 'elma', ipucu: 'kırmızı veya yeşil renkli, kabuğu soyularak yenen meyve' },
+        { kelime: 'araba', ipucu: 'dört tekerlekli, motorlu kara taşıtı' },
+        { kelime: 'okul', ipucu: 'eğitim ve öğretim verilen kurum/bina' },
+        { kelime: 'güneş', ipucu: 'dünyamızı ısıtan ve aydınlatan en yakın yıldız' },
+        { kelime: 'deniz', ipucu: 'tuzlu su kütlesi, yazın yüzmek için gidilir' },
+        { kelime: 'kalem', ipucu: 'kağıda yazı yazmak veya çizim yapmak için kullanılır' },
+        { kelime: 'kitap', ipucu: 'okumak için yazılmış, ciltlenmiş kağıt sayfaları' },
+        { kelime: 'uçak', ipucu: 'gökyüzünde uçan yolcu veya yük taşıtı' }
     ],
     orta: [
-        // teknoloji & eşyalar
-        'bilgisayar', 'kulaklık', 'televizyon', 'buzdolabı', 'çamaşır makinesi', 'mikrodalga', 'hoparlör', 'projektör', 'fotokopi', 'kameralar', 'mikrofon', 'süpreci', 'klavye', 'farelik',
-        // meslekler & kavramlar
-        'öğretmen', 'mühendis', 'doktor', 'hemşire', 'avukat', 'mimar', 'gazeteci', 'astronot', 'itfaiyeci', 'polis', 'şoför', 'eczacı', 'psikolog', 'yazılımcı', 'sanatçı',
-        // coğrafya & bilim
-        'türkiye', 'okyanus', 'yanardağ', 'atmosfer', 'gezegeni', 'galaksi', 'ekosistem', 'biyoloji', 'matematik', 'geometri', 'felsefe', 'edebiyat', 'tarihsel',
-        // soyut & genel kelimeler
-        'özgürlük', 'gelişim', 'arkadaşlık', 'samimiyet', 'kalabalık', 'tecrübe', 'mücadele', 'başarı', 'cesaret', 'merhamet', 'yolculuk', 'gökyüzü', 'kütüphane', 'tiyatro', 'eğlence'
+        { kelime: 'bilgisayar', ipucu: 'veri işleyen, klavye ve ekrana sahip elektronik cihaz' },
+        { kelime: 'televizyon', ipucu: 'evlerde yayın izlemek için kullanılan ekranlı cihaz' },
+        { kelime: 'öğretmen', ipucu: 'okulda öğrencilere bilgi aktaran meslek sahibi' },
+        { kelime: 'astronot', ipucu: 'uzaya giden ve orada araştırmalar yapan kişi' },
+        { kelime: 'okyanus', ipucu: 'kıtaları ayıran devasa tuzlu su kütlesi' },
+        { kelime: 'atmosfer', ipucu: 'dünyamızı saran gaz tabakası' },
+        { kelime: 'özgürlük', ipucu: 'hiçbir kısıtlamaya bağlı kalmadan yaşama durumu' },
+        { kelime: 'kütüphane', ipucu: 'içinde binlerce kitap barındıran sessiz mekan' },
+        { kelime: 'kulaklık', ipucu: 'kulağa takılarak müzik veya ses dinlenen araç' },
+        { kelime: 'mühendis', ipucu: 'teknik işler, tasarım ve yapım süreçlerini yöneten meslek' }
     ],
     zor: [
-        // uzun & karmaşık türkçe kelimeler
-        'programlama', 'elektrofizyoloji', 'mikroorganizma', 'asenkronize', 'deoksiribonükleik', 'infrastruktür', 'muvaffakiyetsizleştiricileştiriverme',
-        'çekoslovakyalılaştırabildiklerimizdenmişsinizcesine', 'kötüleştiricilik', 'şahsiyetsizleştirilmek', 'demokratikleştirilme', 'kapitalistleşmek',
-        'sosyalleştirilebilmek', 'özelleştirilemeyenler', 'milletlerarasılaştırılanlar', 'kavramsallaştırabilmek', 'gerçekleştirilemeyebilir',
-        // nadir & ağır kavramlar
-        'biyokimya', 'psikoterapi', 'spekülasyon', 'konfigürasyon', 'transformasyon', 'manipülasyon', 'organizasyon', 'standardizasyon',
-        'kardiyoloji', 'nörolojik', 'anesteziyoloji', 'enternasyonal', 'paralelleştirme', 'yüzeyselleştirme', 'çerçöpleştirme'
+        { kelime: 'programlama', ipucu: 'bilgisayara komutlar ve kodlar yazma süreci' },
+        { kelime: 'mikroorganizma', ipucu: 'gözle görülemeyecek kadar küçük canlı varlık' },
+        { kelime: 'elektrofizyoloji', ipucu: 'biyolojik hücre ve dokuların elektriksel özelliklerini inceleyen bilim' },
+        { kelime: 'spekülasyon', ipucu: 'piyasalarda geleceğe yönelik tahminlerle kâr sağlama çabası' },
+        { kelime: 'konfigürasyon', ipucu: 'bir sistemin veya yazılımın yapılandırılması ve ayarları' },
+        { kelime: 'psikoterapi', ipucu: 'zihinsel ve duygusal sorunları konuşarak tedavi etme yöntemi' },
+        { kelime: 'biyokimya', ipucu: 'canlıların yapısındaki kimyasal maddeleri inceleyen bilim dalı' },
+        { kelime: 'milletlerarası', ipucu: 'uluslararası, uluslar arası ilişkileri kapsayan kavram' }
     ]
 };
 
@@ -46,7 +49,7 @@ const aktifOyunlar = new Map();
 
 module.exports = {
     name: 'adamasmaca',
-    description: 'kategorili, ipucu sistemli ve devasa kelime hazneli adam asmaca oyunu.',
+    description: 'kategori ipuculu, tekte bilme özellikli adam asmaca oyunu.',
     aliases: ['adam-asmaca'],
     async execute(message, args) {
         if (aktifOyunlar.has(message.author.id)) {
@@ -60,7 +63,10 @@ module.exports = {
         }
 
         const havuz = kelimeler[zorluk];
-        const secilenKelime = havuz[Math.floor(Math.random() * havuz.length)].toLowerCase();
+        const secilenObje = havuz[Math.floor(Math.random() * havuz.length)];
+        const secilenKelime = secilenObje.kelime.toLowerCase();
+        const kelimeIpucu = secilenObje.ipucu;
+
         let kalanHak = haklar[zorluk];
         const tahminEdilenHarfler = new Set();
         let ipucuKullanildi = false;
@@ -77,8 +83,8 @@ module.exports = {
 **kalan hak:** \`${kalanHak}\`
 **kelime:** \`${gizliKelime.join(' ')}\`
 
-*tahmin etmek için harf yazabilirsin.*
-*ipucu almak için **"ipucu"** yazabilirsin (1 hak düşer, 1 defa kullanılır).*
+*tahmin etmek için harf veya **kelimenin tamamını** yazabilirsin!*
+*kelime hakkında bilgi almak için **"ipucu"** yazabilirsin (1 hak düşer).*
             `)
             .setFooter({ text: 'oyunu iptal etmek için "iptal" yazabilirsin.' });
 
@@ -88,6 +94,7 @@ module.exports = {
         const collector = message.channel.createMessageCollector({ filter, time: 600000 });
 
         collector.on('collect', async m => {
+            // büyük/küçük harf duyarlılığını ortadan kaldırıyoruz
             const girdi = m.content.toLowerCase().trim();
 
             // oyunu iptal etme
@@ -96,7 +103,7 @@ module.exports = {
                 return message.channel.send('oyun iptal edildi.');
             }
 
-            // ipucu sistemi
+            // ipucu isteme (kelime hakkında bilgi verir)
             if (girdi === 'ipucu') {
                 if (ipucuKullanildi) {
                     return message.channel.send('zaten bu oyunda ipucu hakkını kullandın!').then(msg => {
@@ -110,47 +117,40 @@ module.exports = {
                     });
                 }
 
-                // henüz açılmamış harfleri bul
-                const acilmamisHarfler = [];
-                for (let i = 0; i < secilenKelime.length; i++) {
-                    if (gizliKelime[i] === '_') {
-                        acilmamisHarfler.push(secilenKelime[i]);
-                    }
-                }
-
-                if (acilmamisHarfler.length === 0) return;
-
-                // rastgele bir harf seç ve aç
-                const rastgeleIpucuHarf = acilmamisHarfler[Math.floor(Math.random() * acilmamisHarfler.length)];
-                tahminEdilenHarfler.add(rastgeleIpucuHarf);
                 ipucuKullanildi = true;
-                kalanHak--; // ipucu cezası olarak 1 hak eksilt
+                kalanHak--; // ipucu cezası
 
-                for (let i = 0; i < secilenKelime.length; i++) {
-                    if (secilenKelime[i] === rastgeleIpucuHarf) {
-                        gizliKelime[i] = rastgeleIpucuHarf;
-                    }
-                }
-
-                message.channel.send(`💡 **ipucu:** Kelimede **"${rastgeleIpucuHarf.toUpperCase()}"** harfi var! (1 hak harcandı)`).then(msg => {
-                    setTimeout(() => msg.delete().catch(() => {}), 4000);
+                message.channel.send(`💡 **kelime hakkında ipucu:** ${kelimeIpucu} *(1 hak harcandı)*`).then(msg => {
+                    setTimeout(() => msg.delete().catch(() => {}), 6000);
                 });
-
-                // ipucu sonrası kazandı mı kontrolü
-                if (!gizliKelime.includes('_')) {
+            } 
+            // tekte bilme (tam kelime tahmini)
+            else if (girdi.length > 1) {
+                if (girdi === secilenKelime) {
                     collector.stop('kazandi');
                     const kazanEmbed = new EmbedBuilder()
-                        .setTitle('🎉 tebrikler, kazandın!')
+                        .setTitle('🎯 TEKTE BİLDİN! TEBRİKLER!')
                         .setColor('#2ecc71')
-                        .setDescription(`kelimeyi doğru bildin: **${secilenKelime}**\n**zorluk:** \`${zorluk}\``);
+                        .setDescription(`kelimenin tamamını doğru tahmin ettin: **${secilenKelime.toUpperCase()}**\n**zorluk:** \`${zorluk}\``);
                     return oyunMesaji.edit({ embeds: [kazanEmbed] });
-                }
-            } else {
-                // harf tahmini kontrolü
-                if (girdi.length !== 1 || !/[a-zçğıöşü]/i.test(girdi)) {
-                    return;
-                }
+                } else {
+                    kalanHak--;
+                    message.channel.send(`❌ **"${girdi}"** kelimesi yanlış! 1 hakkın gitti.`).then(msg => {
+                        setTimeout(() => msg.delete().catch(() => {}), 3000);
+                    });
 
+                    if (kalanHak <= 0) {
+                        collector.stop('kaybetti');
+                        const kaybetEmbed = new EmbedBuilder()
+                            .setTitle('💀 kaybettin!')
+                            .setColor('#e74c3c')
+                            .setDescription(`doğru kelime **${secilenKelime}** idi.\n**zorluk:** \`${zorluk}\``);
+                        return oyunMesaji.edit({ embeds: [kaybetEmbed] });
+                    }
+                }
+            } 
+            // tek harf tahmini
+            else if (girdi.length === 1 && /[a-zçğıöşü]/i.test(girdi)) {
                 if (tahminEdilenHarfler.has(girdi)) {
                     return message.channel.send(`\`${girdi}\` harfini zaten tahmin etmiştin!`).then(msg => {
                         setTimeout(() => msg.delete().catch(() => {}), 3000);
@@ -197,9 +197,9 @@ module.exports = {
 **kalan hak:** \`${kalanHak}\`
 **kelime:** \`${gizliKelime.join(' ')}\`
 **denenen harfler:** ${Array.from(tahminEdilenHarfler).join(', ') || 'yok'}
-**ipucu durumu:** ${ipucuKullanildi ? '❌ kullanıldı' : '✅ kullanılabilir (1 hak eksiltir)'}
+**ipucu durumu:** ${ipucuKullanildi ? '❌ kullanıldı' : '✅ kullanılabilir ("ipucu" yaz)'}
                 `)
-                .setFooter({ text: 'oyunu iptal etmek için "iptal", ipucu için "ipucu" yazabilirsin.' });
+                .setFooter({ text: 'oyunu iptal etmek için "iptal" yazabilirsin.' });
 
             oyunMesaji.edit({ embeds: [guncelEmbed] });
         });
