@@ -172,8 +172,8 @@ client.on('messageCreate', async (message) => {
             const hosgeldinEmbed = new EmbedBuilder()
                 .setTitle('🎉 Hoş Geldin!')
                 .setColor('#22c55e')
-                .setDescription(`tekrardan hoş geldin **${message.author.username}**!\nartık **AFK** değilsin.`)
-                .setFooter({ text: 'afk modundan çıkarıldın.' });
+                .setDescription(`Tekrardan hoş geldin **${message.author.username}**!\nArtık **AFK** değilsin.`)
+                .setFooter({ text: 'AFK modundan çıkarıldın.' });
 
             message.reply({ embeds: [hosgeldinEmbed] });
         }
@@ -187,7 +187,7 @@ client.on('messageCreate', async (message) => {
                     const afkUyariEmbed = new EmbedBuilder()
                         .setTitle('⚠️ Kullanıcı AFK')
                         .setColor('#f59e0b')
-                        .setDescription(`etiketlediğin **${user.username}** şu an AFK!\n\n**Sebep:** ${bilgi.sebep}\n**Süre:** ${dk > 0 ? `${dk} dakika önce` : 'az önce'} afk oldu.`);
+                        .setDescription(`Etiketlediğin **${user.username}** şu an AFK!\n\n**Sebep:** ${bilgi.sebep}\n**Süre:** ${dk > 0 ? `${dk} dakika önce` : 'az önce'} afk oldu.`);
 
                     message.reply({ embeds: [afkUyariEmbed] });
                 }
@@ -199,7 +199,7 @@ client.on('messageCreate', async (message) => {
         const simdi = Date.now();
         const sonKullanim = aiCooldowns.get(message.author.id) || 0;
         if (simdi - sonKullanim < 4000) {
-            return message.reply('yavaş kanka! 4 saniyede bir yazabilirsin 🛑');
+            return message.reply('Yavaş kanka! 4 saniyede bir yazabilirsin 🛑');
         }
         aiCooldowns.set(message.author.id, simdi);
 
@@ -218,7 +218,7 @@ client.on('messageCreate', async (message) => {
             }
         } catch (error) {
             if (error.response && error.response.status === 429) {
-                return message.reply('kanka api biraz yoruldu, 15-20 saniye soluklanıp öyle yaz! 😅');
+                return message.reply('Kanka API biraz yoruldu, 15-20 saniye soluklanıp öyle yaz! 😅');
             }
             console.error('DM Yapay Zeka Hatası:', error.message);
             return message.reply('API bağlantısında ufak bir takılma oldu kanka, bir daha yazsana!');
@@ -246,12 +246,21 @@ client.on('messageCreate', async (message) => {
         return message.reply('Aleyküm Selam, hoş geldin!');
     }
 
-    // --- CAPS LOCK ENGELLEYİCİ (5 VEYA DAHA FAZLA BÜYÜK HARF) ---
+    // --- CAPS LOCK ENGELLEYİCİ (EMBED UYARILI) ---
     const buyukHarfSayisi = (hamMesaj.match(/[A-ZÇĞİÖŞÜ]/g) || []).length;
     if (buyukHarfSayisi >= 5) {
         try {
             await message.delete();
-            const capsUyari = await message.channel.send(`yavaş caps yasak ${message.author.username}`);
+            const rastgeleRenk = Math.floor(Math.random() * 16777215).toString(16);
+            const capsEmbed = {
+                color: parseInt(rastgeleRenk, 16),
+                title: '🔠 Caps Lock Yasak!',
+                description: `Yavaş, fazla büyük harf kullanımı yasak ${message.author}!`,
+                thumbnail: { url: 'https://cdn.discordapp.com/emojis/776713577452273706.png?v=1' },
+                footer: { text: `${message.author.username} uyarıldı.`, icon_url: message.author.displayAvatarURL({ dynamic: true }) },
+                timestamp: new Date()
+            };
+            const capsUyari = await message.channel.send({ embeds: [capsEmbed], allowedMentions: { repliedUser: false } });
             setTimeout(() => capsUyari.delete().catch(() => {}), 5000);
             return;
         } catch (e) {
@@ -329,7 +338,7 @@ client.on('messageCreate', async (message) => {
         const simdi = Date.now();
         const sonKullanim = aiCooldowns.get(message.author.id) || 0;
         if (simdi - sonKullanim < 4000) {
-            return message.reply('yavaş kanka! 4 saniyede bir yazabilirsin 🛑');
+            return message.reply('Yavaş kanka! 4 saniyede bir yazabilirsin 🛑');
         }
         aiCooldowns.set(message.author.id, simdi);
 
@@ -354,7 +363,7 @@ client.on('messageCreate', async (message) => {
 
         } catch (error) {
             if (error.response && error.response.status === 429) {
-                return message.reply('kanka api biraz yoruldu, 15-20 saniye soluklanıp öyle yaz! 😅');
+                return message.reply('Kanka API biraz yoruldu, 15-20 saniye soluklanıp öyle yaz! 😅');
             }
             console.error('Yapay Zeka Hatası Detayı:', error.message);
             return message.reply('API bağlantısında ufak bir takılma oldu kanka, bir daha yazsana!');
