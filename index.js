@@ -18,7 +18,7 @@ const client = new Client({
     partials: [Partials.Channel]
 });
 
-// SERVER VE CONSOLE PANELİ BAGLANTISI (SIRA DÜZELTİLDİ)
+// SERVER VE CONSOLE PANELİ BAGLANTISI
 const app = require('./server.js');
 app.set('discordClient', client);
 
@@ -267,22 +267,21 @@ client.on('messageCreate', async (message) => {
         }
     }
 
+    // --- HASSAS KÜFÜR ENGELLEYİCİ (KELİME İÇİ YANLIŞ POZİTİF KORUMALI) ---
     if (kufurlerListesi.length > 0) {
         const normMesaj = metniNormalizeEt(hamMesaj);
-        const noktasizMesaj = normMesaj.replace(/[^a-z0-9\s]/g, '');
-        const birlesikMesaj = normMesaj.replace(/[^a-z0-9]/g, '');
-        const kelimeler = normMesaj.split(/\s+/);
+        
+        // Noktalama ve sembolleri boşluğa çevirerek sansürlü/noktalı yazımları ayırıyoruz
+        const temizlenmisNoktalama = normMesaj.replace(/[^a-z0-9\s]/g, ' ');
 
         const kufurVarMi = kufurlerListesi.some(kufur => {
             if (typeof kufur !== 'string') return false;
             const normKufur = metniNormalizeEt(kufur.trim());
             if (!normKufur) return false;
 
-            if (kelimeler.includes(normKufur)) return true;
-            if (normMesaj.includes(normKufur) || noktasizMesaj.includes(normKufur)) return true;
-            if (normKufur.length >= 3 && birlesikMesaj.includes(normKufur)) return true;
-
-            return false;
+            // Kelime sınırları (\b) kullanarak kelime içi eşleşmeleri engelliyoruz
+            const regex = new RegExp(`(?:^|\\s)${normKufur}(?:$|\\s)`, 'i');
+            return regex.test(normMesaj) || regex.test(temizlenmisNoktalama);
         });
 
         if (kufurVarMi) {
