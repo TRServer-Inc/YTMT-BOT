@@ -227,6 +227,11 @@ client.on('messageCreate', async (message) => {
 
     const hamKucuk = hamMesaj.toLowerCase();
 
+    // --- KÜÇÜK "a" TEKRAR TESPİTİ (3 VEYA DAHA FAZLA YAN YANA KÜÇÜK "a") ---
+    if (/a{3,}/.test(hamMesaj)) {
+        return message.reply('Sanki, ne desem... Biraz hedefsiz.');
+    }
+
     if (hamKucuk.startsWith('y!')) {
         const args = hamMesaj.slice(2).trim().split(/ +/);
         const commandName = args.shift().toLowerCase();
