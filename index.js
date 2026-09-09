@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Partials, Collection, ActivityType, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, Collection, ActivityType, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
@@ -251,25 +251,29 @@ client.on('messageCreate', async (message) => {
         return message.reply('Aleyküm Selam, hoş geldin!');
     }
 
-    // --- CAPS LOCK ENGELLEYİCİ (EMBED UYARILI) ---
-    const buyukHarfSayisi = (hamMesaj.match(/[A-ZÇĞİÖŞÜ]/g) || []).length;
-    if (buyukHarfSayisi >= 5) {
-        try {
-            await message.delete();
-            const rastgeleRenk = Math.floor(Math.random() * 16777215).toString(16);
-            const capsEmbed = {
-                color: parseInt(rastgeleRenk, 16),
-                title: '🔠 Caps Lock Yasak!',
-                description: `Yavaş, fazla büyük harf kullanımı yasak ${message.author}!`,
-                thumbnail: { url: 'https://cdn.discordapp.com/emojis/776713577452273706.png?v=1' },
-                footer: { text: `${message.author.username} uyarıldı.`, icon_url: message.author.displayAvatarURL({ dynamic: true }) },
-                timestamp: new Date()
-            };
-            const capsUyari = await message.channel.send({ embeds: [capsEmbed], allowedMentions: { repliedUser: false } });
-            setTimeout(() => capsUyari.delete().catch(() => {}), 5000);
-            return;
-        } catch (e) {
-            console.error('[CAPS SILMA HATASI] Botun mesaj silme yetkisi yok!', e.message);
+    // --- CAPS LOCK ENGELLEYİCİ (YÖNETİCİ MUAFİYETLİ & EMBED UYARILI) ---
+    const isYonetici = message.member && message.member.permissions.has(PermissionFlagsBits.Administrator);
+
+    if (!isYonetici) {
+        const buyukHarfSayisi = (hamMesaj.match(/[A-ZÇĞİÖŞÜ]/g) || []).length;
+        if (buyukHarfSayisi >= 5) {
+            try {
+                await message.delete();
+                const rastgeleRenk = Math.floor(Math.random() * 16777215).toString(16);
+                const capsEmbed = {
+                    color: parseInt(rastgeleRenk, 16),
+                    title: '🔠 Caps Lock Yasak!',
+                    description: `Yavaş, fazla büyük harf kullanımı yasak ${message.author}!`,
+                    thumbnail: { url: 'https://cdn.discordapp.com/emojis/776713577452273706.png?v=1' },
+                    footer: { text: `${message.author.username} uyarıldı.`, icon_url: message.author.displayAvatarURL({ dynamic: true }) },
+                    timestamp: new Date()
+                };
+                const capsUyari = await message.channel.send({ embeds: [capsEmbed], allowedMentions: { repliedUser: false } });
+                setTimeout(() => capsUyari.delete().catch(() => {}), 5000);
+                return;
+            } catch (e) {
+                console.error('[CAPS SILMA HATASI] Botun mesaj silme yetkisi yok!', e.message);
+            }
         }
     }
 
@@ -277,9 +281,8 @@ client.on('messageCreate', async (message) => {
         try {
             const linkConfig = JSON.parse(fs.readFileSync(linkEngelConfigPath, 'utf8'));
             const sistemAcikMi = linkConfig[message.guild.id];
-            const yoneticiMi = message.member && message.member.permissions.has('Administrator');
 
-            if (sistemAcikMi && !yoneticiMi) {
+            if (sistemAcikMi && !isYonetici) {
                 const linkRegex = /(https?:\/\/|www\.|discord\.gg|discord\.com\/invite|[a-zA-Z0-9-]+\.(com|net|org|xyz|tk|ml|ga|cf|gq|site|online|store|io|me|tv|co))/i;
 
                 if (linkRegex.test(hamMesaj)) {
