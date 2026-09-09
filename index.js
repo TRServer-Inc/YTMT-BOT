@@ -246,6 +246,19 @@ client.on('messageCreate', async (message) => {
         return message.reply('Aleyküm Selam, hoş geldin!');
     }
 
+    // --- CAPS LOCK ENGELLEYİCİ (5 VEYA DAHA FAZLA BÜYÜK HARF) ---
+    const buyukHarfSayisi = (hamMesaj.match(/[A-ZÇĞİÖŞÜ]/g) || []).length;
+    if (buyukHarfSayisi >= 5) {
+        try {
+            await message.delete();
+            const capsUyari = await message.channel.send(`yavaş caps yasak ${message.author.username}`);
+            setTimeout(() => capsUyari.delete().catch(() => {}), 5000);
+            return;
+        } catch (e) {
+            console.error('[CAPS SILMA HATASI] Botun mesaj silme yetkisi yok!', e.message);
+        }
+    }
+
     if (fs.existsSync(linkEngelConfigPath)) {
         try {
             const linkConfig = JSON.parse(fs.readFileSync(linkEngelConfigPath, 'utf8'));
