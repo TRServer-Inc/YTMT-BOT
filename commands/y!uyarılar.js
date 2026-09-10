@@ -37,15 +37,19 @@ module.exports = {
         }
 
         try {
-            const kayit = await Uyari.findOne({ guildId: message.guild.id, userId: hedefUser.id });
+            const kayit = await Uyari.findOne({ guildId: String(message.guild.id), userId: String(hedefUser.id) });
 
-            // 'uyarilar' dizisi yoksa veya boşsa uyarmıyoruz
             if (!kayit || !Array.isArray(kayit.uyarilar) || kayit.uyarilar.length === 0) {
                 return message.reply(`<@${hedefUser.id}> kullanıcısının hiç uyarısı yok kanka! 🥳`);
             }
 
+            // Şemandaki obje yapısından 'sebep' ve 'uyaran' bilgilerini çekiyoruz
             const sebeplerListesi = kayit.uyarilar
-                .map((sebep, index) => `**${index + 1}.** ${sebep}`)
+                .map((u, index) => {
+                    const sebepMetni = typeof u === 'object' && u.sebep ? u.sebep : u;
+                    const uyaranMetni = typeof u === 'object' && u.uyaran ? `<@${u.uyaran}>` : 'Bilinmiyor';
+                    return `**${index + 1}.** ${sebepMetni} *(Uyaran: ${uyaranMetni})*`;
+                })
                 .join('\n');
 
             const embed = new EmbedBuilder()
@@ -54,7 +58,7 @@ module.exports = {
                 .setDescription(`<@${hedefUser.id}> kullanıcısının veritabanındaki uyarı bilgileri:`)
                 .addFields(
                     { name: '📊 Toplam Uyarı Sayısı', value: `\`${kayit.uyarilar.length}\``, inline: true },
-                    { name: '📜 Uyarı Sebepleri', value: sebeplerListesi, inline: false }
+                    { name: '📜 Uyarı Sebepleri', value: sebeplerListesi.length > 1024 ? sebeplerListesi.slice(0, 1000) + '...' : sebeplerListesi, inline: false }
                 )
                 .setThumbnail(hedefUser.displayAvatarURL({ dynamic: true }))
                 .setTimestamp();
