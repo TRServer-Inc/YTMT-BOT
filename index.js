@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 
-// --- 1. MONGODB BAĞLANTISI VE ŞEMALAR (SİLMEDEN, OVERWRITE HATASINI ÖNLEYEREK) ---
+// --- 1. MONGODB BAĞLANTISI VE MODELLER (data/db.js ÜZERİNDEN ÇEKİLİYOR) ---
 if (process.env.MONGO_URI) {
     mongoose.connect(process.env.MONGO_URI)
         .then(() => console.log('[DATABASE] MongoDB bağlantısı başarıyla kuruldu! 🎉'))
@@ -15,19 +15,7 @@ if (process.env.MONGO_URI) {
     console.error('[DATABASE HATA] MONGO_URI .env dosyasında bulunamadı!');
 }
 
-// HGBB Şeması (Zaten tanımlıysa var olanı kullanır, çökmez)
-const hgbbSchema = new mongoose.Schema({
-    guildId: { type: String, required: true, unique: true },
-    channelId: { type: String, required: true }
-});
-const Hgbb = mongoose.models.Hgbb || mongoose.model('Hgbb', hgbbSchema);
-
-// Link Engel Şeması (Zaten tanımlıysa var olanı kullanır, çökmez)
-const linkEngelSchema = new mongoose.Schema({
-    guildId: { type: String, required: true, unique: true },
-    durum: { type: Boolean, default: false }
-});
-const LinkEngel = mongoose.models.LinkEngel || mongoose.model('LinkEngel', linkEngelSchema);
+const { Hgbb, LinkEngel } = require('./data/db.js');
 
 // --- 2. BOT KURULUMU VE INTENTLER ---
 const client = new Client({
@@ -185,7 +173,7 @@ client.on('messageCreate', async (message) => {
         const simdi = Date.now();
         const sonKullanim = aiCooldowns.get(message.author.id) || 0;
         if (simdi - sonKullanim < 4000) {
-            return message.reply('Yavaş kanka! 4 saniyede bir yazabilirsin 🛑');
+            return message.reply('yavaş kanka! 4 saniyede bir yazabilirsin 🛑');
         }
         aiCooldowns.set(message.author.id, simdi);
 
@@ -196,18 +184,18 @@ client.on('messageCreate', async (message) => {
             if (data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
                 const cevap = data.candidates[0].content.parts[0].text;
                 if (cevap.length > 2000) {
-                    return message.reply(cevap.substring(0, 1900) + '... (Cevap çok uzun)');
+                    return message.reply(cevap.substring(0, 1900) + '... (cevap çok uzun)');
                 }
                 return message.reply(cevap);
             } else {
-                return message.reply('Şu an cevabı tam toparlayamadım kanka, tekrar sorar mısın? 🤔');
+                return message.reply('şu an cevabı tam toparlayamadım kanka, tekrar sorar mısın? 🤔');
             }
         } catch (error) {
             if (error.response && error.response.status === 429) {
-                return message.reply('Kanka API biraz yoruldu, 15-20 saniye soluklanıp öyle yaz! 😅');
+                return message.reply('kanka api biraz yoruldu, 15-20 saniye soluklanıp öyle yaz! 😅');
             }
             console.error('DM Yapay Zeka Hatası:', error.message);
-            return message.reply('API bağlantısında ufak bir takılma oldu kanka, bir daha yazsana!');
+            return message.reply('api bağlantısında ufak bir takılma oldu kanka, bir daha yazsana!');
         }
     }
 
@@ -224,14 +212,14 @@ client.on('messageCreate', async (message) => {
                 return await command.execute(message, args, client);
             } catch (error) {
                 console.error(`${commandName} çalışırken hata:`, error);
-                return message.reply('Komut çalıştırılırken bir hata oluştu!');
+                return message.reply('komut çalıştırılırken bir hata oluştu!');
             }
         }
     }
 
     // Selamlaşma
     if (hamKucuk === 'sa' || hamKucuk === 's.a' || hamKucuk === 'selamun aleyküm' || hamKucuk === 'selamün aleyküm') {
-        return message.reply('Aleyküm Selam, hoş geldin!');
+        return message.reply('aleyküm selam, hoş geldin!');
     }
 
     const isYonetici = message.member && message.member.permissions.has(PermissionFlagsBits.Administrator);
@@ -245,8 +233,8 @@ client.on('messageCreate', async (message) => {
                 const rastgeleRenk = Math.floor(Math.random() * 16777215).toString(16);
                 const capsEmbed = {
                     color: parseInt(rastgeleRenk, 16),
-                    title: '🔠 Caps Lock Yasak!',
-                    description: `Yavaş, fazla büyük harf kullanımı yasak ${message.author}!`,
+                    title: '🔠 caps lock yasak!',
+                    description: `yavaş, fazla büyük harf kullanımı yasak ${message.author}!`,
                     thumbnail: { url: 'https://cdn.discordapp.com/emojis/776713577452273706.png?v=1' },
                     footer: { text: `${message.author.username} uyarıldı.`, icon_url: message.author.displayAvatarURL({ dynamic: true }) },
                     timestamp: new Date()
@@ -301,7 +289,7 @@ client.on('messageCreate', async (message) => {
                 const rastgeleRenk = Math.floor(Math.random() * 16777215).toString(16);
                 const uyariEmbed = {
                     color: parseInt(rastgeleRenk, 16),
-                    title: '🚫 Küfür Yasak!',
+                    title: '🚫 küfür yasak!',
                     description: `${message.author}, bu sunucuda küfür veya argo kullanımı yasaktır!`,
                     thumbnail: { url: 'https://cdn.discordapp.com/emojis/776713577452273706.png?v=1' },
                     footer: { text: `${message.author.username} uyarıldı.`, icon_url: message.author.displayAvatarURL({ dynamic: true }) },
@@ -326,14 +314,14 @@ client.on('messageCreate', async (message) => {
         const simdi = Date.now();
         const sonKullanim = aiCooldowns.get(message.author.id) || 0;
         if (simdi - sonKullanim < 4000) {
-            return message.reply('Yavaş kanka! 4 saniyede bir yazabilirsin 🛑');
+            return message.reply('yavaş kanka! 4 saniyede bir yazabilirsin 🛑');
         }
         aiCooldowns.set(message.author.id, simdi);
 
         try {
             const soru = message.content.replace(/<@!?\d+>/g, '').replace(/<a?:\w+:\d+>/g, '').trim();
             if (!soru) {
-                return message.reply('Efendim? Benimle konuşmak için bir şeyler yazabilirsin!');
+                return message.reply('efendim? benimle konuşmak için bir şeyler yazabilirsin!');
             }
 
             await message.channel.sendTyping();
@@ -342,19 +330,19 @@ client.on('messageCreate', async (message) => {
             if (data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
                 const cevap = data.candidates[0].content.parts[0].text;
                 if (cevap.length > 2000) {
-                    return message.reply(cevap.substring(0, 1900) + '... (Cevap çok uzun)');
+                    return message.reply(cevap.substring(0, 1900) + '... (cevap çok uzun)');
                 }
                 return message.reply(cevap);
             } else {
-                return message.reply('Şu an cevabı tam toparlayamadım kanka, tekrar sorar mısın? 🤔');
+                return message.reply('şu an cevabı tam toparlayamadım kanka, tekrar sorar mısın? 🤔');
             }
 
         } catch (error) {
             if (error.response && error.response.status === 429) {
-                return message.reply('Kanka API biraz yoruldu, 15-20 saniye soluklanıp öyle yaz! 😅');
+                return message.reply('kanka api biraz yoruldu, 15-20 saniye soluklanıp öyle yaz! 😅');
             }
             console.error('Yapay Zeka Hatası Detayı:', error.message);
-            return message.reply('API bağlantısında ufak bir takılma oldu kanka, bir daha yazsana!');
+            return message.reply('api bağlantısında ufak bir takılma oldu kanka, bir daha yazsana!');
         }
     }
 });
@@ -370,8 +358,8 @@ client.on('guildMemberAdd', async (member) => {
 
         const hgEmbed = new EmbedBuilder()
             .setColor('#2ecc71')
-            .setTitle('🎉 Aramıza Biri Katıldı!')
-            .setDescription(`Hoş geldin ${member}! Seninle birlikte **${member.guild.memberCount}** kişi olduk. 🚀`)
+            .setTitle('🎉 aramıza biri katıldı!')
+            .setDescription(`hoş geldin ${member}! seninle birlikte **${member.guild.memberCount}** kişi olduk. 🚀`)
             .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
             .setTimestamp();
 
@@ -392,8 +380,8 @@ client.on('guildMemberRemove', async (member) => {
 
         const bbEmbed = new EmbedBuilder()
             .setColor('#e74c3c')
-            .setTitle('👋 Biri Aramızdan Ayrıldı...')
-            .setDescription(`Görüşürüz **${member.user.username}**! Toplam **${member.guild.memberCount}** kişi kaldık. 😢`)
+            .setTitle('👋 biri aramızdan ayrıldı...')
+            .setDescription(`görüşürüz **${member.user.username}**! toplam **${member.guild.memberCount}** kişi kaldı. 😢`)
             .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
             .setTimestamp();
 
@@ -410,9 +398,9 @@ client.once('ready', () => {
     console.log(`==================================================\n`);
 
     const durumlar = [
-        { name: 'DM\'den gelen soruları dinliyor...', type: ActivityType.Listening },
-        { name: 'Minecraft & Roblox oynuyor...', type: ActivityType.Playing },
-        { name: 'Sunucudaki sohbeti izliyor...', type: ActivityType.Watching }
+        { name: 'dm\'den gelen soruları dinliyor...', type: ActivityType.Listening },
+        { name: 'minecraft & roblox oynuyor...', type: ActivityType.Playing },
+        { name: 'sunucudaki sohbeti izliyor...', type: ActivityType.Watching }
     ];
 
     let index = 0;
