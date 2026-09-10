@@ -68,28 +68,32 @@ module.exports = {
             }
         }
 
-        const sebep = args.slice(2).join(' ') || 'sebep belirtilmedi';
+        const sebepMetni = args.slice(2).join(' ') || 'sebep belirtilmedi';
 
         try {
-            // Kaç tane uyarı verildiyse diziye o kadar 'sebep' ekleyelim
-            const eklenecekUyarilar = Array(uyariMiktari).fill(sebep);
+            // Şemandaki Obje yapısına tam uygun obje dizisi oluşturuyoruz
+            const yeniUyariObjesi = {
+                sebep: sebepMetni,
+                uyaran: message.author.id,
+                tarih: new Date()
+            };
 
-            // Veritabanındaki 'uyarilar' dizisine $push ile ekliyoruz
+            const eklenecekUyarilar = Array(uyariMiktari).fill(yeniUyariObjesi);
+
+            // $push operasyonu ile uyarilar dizisine objeleri gömüyoruz
             const guncelKayit = await Uyari.findOneAndUpdate(
-                { guildId: message.guild.id, userId: hedefUser.id },
-                { 
-                    $push: { uyarilar: { $each: eklenecekUyarilar } }
-                },
+                { guildId: String(message.guild.id), userId: String(hedefUser.id) },
+                { $push: { uyarilar: { $each: eklenecekUyarilar } } },
                 { new: true, upsert: true }
             );
 
             const sunucudaMiMesaj = hedefUye ? '' : ' *(Kullanıcı şu an sunucuda bulunmuyor, uyarı veritabanına işlendi)*';
-            const toplamSayi = guncelKayit.uyarilar ? guncelKayit.uyarilar.length : 0;
+            const toplamSayi = guncelKayit && guncelKayit.uyarilar ? guncelKayit.uyarilar.length : 0;
 
             const uyariEmbed = new EmbedBuilder()
                 .setColor('#f59e0b')
                 .setTitle('⚠️ kullanıcı uyarıldı!')
-                .setDescription(`<@${hedefUser.id}> (${hedefUser.tag}) kullanıcısına **+${uyariMiktari}** uyarı eklendi.${sunucudaMiMesaj}\n\n**uyaran:** ${message.author}\n**sebep:** ${sebep}\n**toplam uyarı:** ${toplamSayi}`)
+                .setDescription(`<@${hedefUser.id}> (${hedefUser.tag}) kullanıcısına **+${uyariMiktari}** uyarı eklendi.${sunucudaMiMesaj}\n\n**uyaran:** ${message.author}\n**sebep:** ${sebepMetni}\n**toplam uyarı:** ${toplamSayi}`)
                 .setTimestamp();
 
             await message.channel.send({ embeds: [uyariEmbed] });
