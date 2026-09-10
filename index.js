@@ -139,8 +139,8 @@ client.on('messageCreate', async (message) => {
         }
     }
 
-    // AFK Kontrolü
-    const afkCommand = client.commands.get('afk') || client.commands.get('y!afk');
+    // AFK Kontrolü (y!afk uyumlu)
+    const afkCommand = client.commands.get('y!afk') || client.commands.get('afk');
     if (afkCommand && afkCommand.afkMap) {
         const afkMap = afkCommand.afkMap;
 
@@ -215,17 +215,18 @@ client.on('messageCreate', async (message) => {
 
     const hamKucuk = hamMesaj.toLowerCase();
 
-    // Genel Komut Tetikleme (y! ile başlayan tüm komutlar)
+    // Genel Komut Tetikleme (y! Öneki Esas Alınır)
     if (hamKucuk.startsWith('y!')) {
         const args = hamMesaj.slice(2).trim().split(/ +/);
         const commandName = args.shift().toLowerCase();
 
-        const command = client.commands.get(commandName) || client.commands.get(`y!${commandName}`);
+        // Hem y!komutAdi hem de komutAdi isimleriyle eşleşme kontrolü yapıyoruz
+        const command = client.commands.get(`y!${commandName}`) || client.commands.get(commandName);
         if (command && typeof command.execute === 'function') {
             try {
                 return await command.execute(message, args, client);
             } catch (error) {
-                console.error(`${commandName} çalışırken hata:`, error);
+                console.error(`y!${commandName} çalışırken hata:`, error);
                 return message.reply('komut çalıştırılırken bir hata oluştu!');
             }
         }
