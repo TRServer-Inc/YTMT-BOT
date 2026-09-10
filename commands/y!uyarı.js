@@ -10,18 +10,26 @@ module.exports = {
             return message.reply('bu komutu kullanmak için **Mesajları Yönet** yetkisine sahip olmalısın kanka! 🛑');
         }
 
-        if (!args[0] || !args[1]) {
-            return message.reply('kullanım şekli: `y!uyarı <kaç_uyarı> <id_veya_etiket> <sebep>`\nörnek: `y!uyarı 2 @kullanıcı küfür`');
+        if (!args[0]) {
+            return message.reply('kullanım şekli: `y!uyarı <mektar> <id_veya_etiket> <sebep>` veya `y!uyarı <id_veya_etiket> <sebep>`');
         }
 
-        // 2. Miktar kontrolü
-        const uyariMiktari = parseInt(args[0]);
+        // 2. Akıllı Argüman Kontrolü (Sayı var mı yok mu?)
+        let uyariMiktari = parseInt(args[0]);
+        let hedefIndex = 1;
+
+        // İlk argüman bir sayı değilse, varsayılan olarak 1 uyarı say ve hedefi args[0] yap
         if (isNaN(uyariMiktari) || uyariMiktari <= 0) {
-            return message.reply('lütfen geçerli bir uyarı miktarı gir kanka! Örnek: `y!uyarı 1 @kullanıcı sebep`');
+            uyariMiktari = 1;
+            hedefIndex = 0;
+        }
+
+        const hedefInput = args[hedefIndex];
+        if (!hedefInput) {
+            return message.reply('lütfen uyarmak istediğin kullanıcıyı etiketle veya ID\'sini gir kanka!');
         }
 
         // 3. Kullanıcı bulma (ID / Etiket)
-        const hedefInput = args[1];
         let hedefUye = message.mentions.members.first();
         let hedefUser = null;
 
@@ -68,10 +76,10 @@ module.exports = {
             }
         }
 
-        const sebepMetni = args.slice(2).join(' ') || 'sebep belirtilmedi';
+        // Sebep dinamik olarak sayı girildiyse 2, girilmediyse 1. indeksten başlar
+        const sebepMetni = args.slice(hedefIndex + 1).join(' ') || 'sebep belirtilmedi';
 
         try {
-            // Şemandaki Obje yapısına tam uygun obje dizisi oluşturuyoruz
             const yeniUyariObjesi = {
                 sebep: sebepMetni,
                 uyaran: message.author.id,
@@ -80,7 +88,6 @@ module.exports = {
 
             const eklenecekUyarilar = Array(uyariMiktari).fill(yeniUyariObjesi);
 
-            // $push operasyonu ile uyarilar dizisine objeleri gömüyoruz
             const guncelKayit = await Uyari.findOneAndUpdate(
                 { guildId: String(message.guild.id), userId: String(hedefUser.id) },
                 { $push: { uyarilar: { $each: eklenecekUyarilar } } },
