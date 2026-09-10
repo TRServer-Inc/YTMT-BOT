@@ -3,7 +3,7 @@ const { Uyari } = require('../data/db.js');
 
 module.exports = {
     name: 'uyarı',
-    description: 'kullanıcıya uyarı verir ve veritabanına kaydeder.',
+    description: 'kullanıcıya uyarı verir, 3 uyarıda the void rolü atar.',
     async execute(message, args, client) {
         // 1. Komutu atan kişinin yetkisi var mı? (Yönetici veya Mesajları Yönet yetkisi olmalı)
         if (!message.member.permissions.has(PermissionFlagsBits.ManageMessages) && message.author.id !== message.guild.ownerId) {
@@ -92,10 +92,32 @@ module.exports = {
             const uyariEmbed = new EmbedBuilder()
                 .setColor('#f59e0b')
                 .setTitle('⚠️ kullanıcı uyarıldı!')
-                .setDescription(`<@${hedefUser.id}> (${hedefUser.tag}) kullanıcısına uyarı verildi.${sunucudaMiMesaj}\n\n**uyaran:** ${message.author}\n**sebep:** ${sebep}\n**toplam uyarı:** ${kayit.count}`)
+                .setDescription(`<@${hedefUser.id}> (${hedefUser.tag}) kullanıcısına uyarı verildi.${sunucudaMiMesaj}\n\n**uyaran:** ${message.author}\n**sebep:** ${sebep}\n**toplam uyarı:** ${kayit.count}/3`)
                 .setTimestamp();
 
             await message.channel.send({ embeds: [uyariEmbed] });
+
+            // 3. Uyarıya ulaştıysa "🛑 The Void" rolü ver (Sadece sunucudaysa rol verilebilir)
+            if (kayit.count >= 3) {
+                if (hedefUye) {
+                    const voidRol = message.guild.roles.cache.find(r => r.name === '🛑 The Void');
+                    if (voidRol) {
+                        await hedefUye.roles.add(voidRol).catch(err => console.error('[VOID ROL HATA]', err));
+                        
+                        const voidEmbed = new EmbedBuilder()
+                            .setColor('#ff0000')
+                            .setTitle('🛑 the void katmanına gönderildi!')
+                            .setDescription(`${hedefUye} 3 uyarıya ulaştığı için **The Void** rolü verilerek susturuldu!`)
+                            .setTimestamp();
+
+                        await message.channel.send({ embeds: [voidEmbed] });
+                    } else {
+                        await message.channel.send('⚠️ kullanıcı 3 uyarıya ulaştı ama sunucuda **🛑 The Void** rolü bulunamadı!');
+                    }
+                } else {
+                    await message.channel.send('⚠️ kullanıcı 3 uyarıya ulaştı ama sunucuda olmadığı için **The Void** rolü verilemedi!');
+                }
+            }
 
         } catch (err) {
             console.error('[UYARI KOMUT HATA]', err);
