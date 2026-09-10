@@ -1,49 +1,37 @@
-const fs = require('fs');
-const path = require('path');
-const { PermissionFlagsBits } = require('discord.js');
-
-const dataDir = path.join(process.cwd(), 'data');
-const configPath = path.join(dataDir, 'linkengel-config.json');
+const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { LinkEngel } = require('../data/db.js');
 
 module.exports = {
-    name: 'link-engel',
-    description: 'link ve reklam engelleyiciyi açar veya kapatır.',
+    name: 'y!link-engel',
+    description: 'link engelleme sistemini açar veya kapatır.',
     async execute(message, args, client) {
         if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) {
-            return message.reply('Bu komutu kullanmak için `Yönetici` yetkisine sahip olmalısın.');
+            return message.reply('bu komutu kullanmak için yönetici olmalısın kanka!');
         }
 
-        const secim = args[0] ? args[0].toLowerCase() : null;
-
-        if (!secim || (secim !== 'aç' && secim !== 'ac' && secim !== 'kapat')) {
-            return message.reply('Lütfen geçerli bir seçenek girin! Örnek: `y!link-engel aç` veya `y!link-engel kapat`');
+        const secim = args[0]?.toLowerCase();
+        if (!secim || (secim !== 'aç' && secim !== 'kapat' && secim !== 'ac')) {
+            return message.reply('lütfen geçerli bir durum belirt kanka! Örn: `y!link-engel aç` veya `y!link-engel kapat`');
         }
 
-        if (!fs.existsSync(dataDir)) {
-            fs.mkdirSync(dataDir, { recursive: true });
-        }
+        const yeniDurum = (secim === 'aç' || secim === 'ac');
 
-        let config = {};
-        if (fs.existsSync(configPath)) {
-            try {
-                config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-            } catch (e) {
-                config = {};
-            }
-        }
+        try {
+            await LinkEngel.findOneAndUpdate(
+                { guildId: message.guild.id },
+                { durum: yeniDurum },
+                { upsert: true, new: true }
+            );
 
-        const guildId = message.guild.id;
+            const embed = new EmbedBuilder()
+                .setColor(yeniDurum ? '#22c55e' : '#ef4444')
+                .setTitle('🔗 link engel sistemi')
+                .setDescription(`link engelleme sistemi **${yeniDurum ? 'AÇILDI 🟢' : 'KAPATILDI 🔴'}**.`);
 
-        if (secim === 'aç' || secim === 'ac') {
-            config[guildId] = true;
-            fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-            return message.reply('🔗 **Link Engelleme Sistemi Başarıyla AÇILDI!** Artık sunucuda link ve reklam atanların mesajları silinecek.');
-        }
-
-        if (secim === 'kapat') {
-            config[guildId] = false;
-            fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-            return message.reply('🔓 **Link Engelleme Sistemi KAPATILDI.**');
+            await message.reply({ embeds: [embed] });
+        } catch (err) {
+            console.error('[LİNK ENGEL HATA]', err);
+            await message.reply('veri tabanına işlenirken bir sorun oluştu kanka!');
         }
     }
 };
