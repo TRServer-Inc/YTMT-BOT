@@ -283,7 +283,7 @@ client.on('messageCreate', async (message) => {
     }
 
     // Küfür Filtresi (kufurler.json üzerinden)
-    if (kufurlerListesi.length > 0) {
+    if (!isYonetici && kufurlerListesi.length > 0) {
         const normMesaj = metniNormalizeEt(hamMesaj);
         const temizlenmisNoktalama = normMesaj.replace(/[^a-z0-9\s]/g, ' ');
 
