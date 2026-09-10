@@ -5,6 +5,9 @@ const path = require('path');
 const axios = require('axios');
 require('dotenv').config();
 
+// --- 0. MONGODB VERİTABANI BAĞLANTISI ---
+const { connectDB, Hgbb } = require('./data/db.js');
+
 // --- 1. BOT KURULUMU VE INTENTLER ---
 const client = new Client({
     intents: [
@@ -26,12 +29,12 @@ client.commands = new Collection();
 const aiCooldowns = new Map();
 
 // --- DATA KLASÖRÜ KONTROLÜ VE OLUŞTURMA ---
-const dataDir = path.join(process.cwd(), 'data');
+const dataDir = path.join(__dirname, 'data');
 if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
 }
 
-// --- 2. AYAR DOSYALARI VE HAFIZA HAZIRLIĞI ---
+// --- 2. KÜFÜR VE LİNK KONFİGÜRASYONU ---
 const kufurlerPath = path.join(dataDir, 'kufurler.json');
 let kufurlerListesi = [];
 
@@ -51,7 +54,6 @@ function kufurleriYukle() {
 }
 kufurleriYukle();
 
-const hgbbConfigPath = path.join(dataDir, 'hgbb-config.json');
 const linkEngelConfigPath = path.join(dataDir, 'linkengel-config.json');
 
 // --- MESAJ SAYACI VERİTABANI HAFIZASI ---
@@ -83,7 +85,9 @@ function mesajKaydet(guildId, userId) {
     if (!mesajData[guildId][userId].haftalik) mesajData[guildId][userId].haftalik = {};
     mesajData[guildId][userId].haftalik[haftaKey] = (mesajData[guildId][userId].haftalik[haftaKey] || 0) + 1;
 
-    fs.writeFileSync(mesajDataPath, JSON.stringify(mesajData, null, 2));
+    try {
+        fs.writeFileSync(mesajDataPath, JSON.stringify(mesajData, null, 2));
+    } catch (e) {}
 }
 
 // --- 3. KOMUT YÜKLEYİCİ ---
@@ -153,7 +157,7 @@ client.on('messageCreate', async (message) => {
         mesajKaydet(message.guild.id, message.author.id);
     }
 
-    const afkCommand = client.commands.get('afk');
+    const afkCommand = client.commands.get('afk') || client.commands.get('y!afk');
     if (afkCommand && afkCommand.afkMap) {
         const afkMap = afkCommand.afkMap;
 
@@ -227,7 +231,6 @@ client.on('messageCreate', async (message) => {
 
     const hamKucuk = hamMesaj.toLowerCase();
 
-    // --- KÜÇÜK "a" TEKRAR TESPİTİ (3 VEYA DAHA FAZLA YAN YANA KÜÇÜK "a") ---
     if (/a{3,}/.test(hamMesaj)) {
         return message.reply('Sanki, ne desem... Biraz hedefsiz.');
     }
@@ -236,7 +239,7 @@ client.on('messageCreate', async (message) => {
         const args = hamMesaj.slice(2).trim().split(/ +/);
         const commandName = args.shift().toLowerCase();
 
-        const command = client.commands.get(commandName);
+        const command = client.commands.get(commandName) || client.commands.get(`y!${commandName}`);
         if (command && typeof command.execute === 'function') {
             try {
                 return await command.execute(message, args, client);
@@ -251,7 +254,6 @@ client.on('messageCreate', async (message) => {
         return message.reply('Aleyküm Selam, hoş geldin!');
     }
 
-    // --- CAPS LOCK ENGELLEYİCİ (YÖNETİCİ MUAFİYETLİ & EMBED UYARILI) ---
     const isYonetici = message.member && message.member.permissions.has(PermissionFlagsBits.Administrator);
 
     if (!isYonetici) {
@@ -272,7 +274,7 @@ client.on('messageCreate', async (message) => {
                 setTimeout(() => capsUyari.delete().catch(() => {}), 5000);
                 return;
             } catch (e) {
-                console.error('[CAPS SILMA HATASI] Botun mesaj silme yetkisi yok!', e.message);
+                console.error('[CAPS SILMA HATASI]', e.message);
             }
         }
     }
@@ -297,11 +299,8 @@ client.on('messageCreate', async (message) => {
         }
     }
 
-    // --- HASSAS KÜFÜR ENGELLEYİCİ (KELİME İÇİ YANLIŞ POZİTİF KORUMALI) ---
     if (kufurlerListesi.length > 0) {
         const normMesaj = metniNormalizeEt(hamMesaj);
-        
-        // Noktalama ve sembolleri boşluğa çevirerek sansürlü/noktalı yazımları ayırıyoruz
         const temizlenmisNoktalama = normMesaj.replace(/[^a-z0-9\s]/g, ' ');
 
         const kufurVarMi = kufurlerListesi.some(kufur => {
@@ -309,7 +308,6 @@ client.on('messageCreate', async (message) => {
             const normKufur = metniNormalizeEt(kufur.trim());
             if (!normKufur) return false;
 
-            // Kelime sınırları (\b) kullanarak kelime içi eşleşmeleri engelliyoruz
             const regex = new RegExp(`(?:^|\\s)${normKufur}(?:$|\\s)`, 'i');
             return regex.test(normMesaj) || regex.test(temizlenmisNoktalama);
         });
@@ -332,7 +330,7 @@ client.on('messageCreate', async (message) => {
                 setTimeout(() => { uyariMesaji.delete().catch(() => {}); }, 5000);
                 return;
             } catch (error) {
-                console.error('[KÜFÜR SILMA HATASI] Botun mesaj silme yetkisi yok! Hata:', error.message);
+                console.error('[KÜFÜR SILMA HATASI]', error.message);
             }
         }
     }
@@ -409,60 +407,66 @@ client.on('interactionCreate', async (interaction) => {
     }
 });
 
-// --- 6. HOŞ GELDİN MESAJI (GİRİŞ) ---
+// --- 6. MONGODB DESTEKLİ HOŞ GELDİN MESAJI (GİRİŞ) ---
 client.on('guildMemberAdd', async (member) => {
     console.log(`[GİRİŞ BİLDİRİMİ] ${member.user.tag} sunucuya katıldı.`);
-    if (!fs.existsSync(hgbbConfigPath)) return;
+    
     try {
-        const config = JSON.parse(fs.readFileSync(hgbbConfigPath, 'utf8'));
-        const kanalId = config[member.guild.id];
-        if (!kanalId) return;
+        const config = await Hgbb.findOne({ guildId: member.guild.id });
+        if (!config || !config.channelId) {
+            console.log(`[HGBB IPTAL] ${member.guild.name} için veritabanında ayarlı hgbb kanalı bulunamadı.`);
+            return;
+        }
 
-        const kanal = await member.guild.channels.fetch(kanalId).catch(() => null);
-        if (!kanal) return;
+        const kanal = member.guild.channels.cache.get(config.channelId) || await member.guild.channels.fetch(config.channelId).catch(() => null);
+        if (!kanal) {
+            console.log(`[HGBB IPTAL] Kanal bulunamadı. ID: ${config.channelId}`);
+            return;
+        }
 
-        const hgEmbed = {
-            color: 0x2ecc71,
-            title: '🎉 Aramıza Biri Katıldı!',
-            description: `Hoş geldin ${member}! Seninle birlikte **${member.guild.memberCount}** kişi olduk. 🚀`,
-            thumbnail: { url: member.user.displayAvatarURL({ dynamic: true }) },
-            timestamp: new Date()
-        };
+        const hgEmbed = new EmbedBuilder()
+            .setColor('#2ecc71')
+            .setTitle('🎉 Aramıza Biri Katıldı!')
+            .setDescription(`Hoş geldin ${member}! Seninle birlikte **${member.guild.memberCount}** kişi olduk. 🚀`)
+            .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+            .setTimestamp();
 
         await kanal.send({ embeds: [hgEmbed] });
+        console.log(`[HGBB BAŞARILI] ${member.user.tag} için hoş geldin mesajı atıldı.`);
     } catch (e) {
-        console.error('hg mesajı gönderme hatası:', e);
+        console.error('[HGBB GİRİŞ HATASI]', e);
     }
 });
 
-// --- 7. BAY BAY MESAJI (ÇIKIŞ) ---
+// --- 7. MONGODB DESTEKLİ BAY BAY MESAJI (ÇIKIŞ) ---
 client.on('guildMemberRemove', async (member) => {
     console.log(`[ÇIKIŞ BİLDİRİMİ] ${member.user.tag} sunucudan ayrıldı.`);
-    if (!fs.existsSync(hgbbConfigPath)) return;
+    
     try {
-        const config = JSON.parse(fs.readFileSync(hgbbConfigPath, 'utf8'));
-        const kanalId = config[member.guild.id];
-        if (!kanalId) return;
+        const config = await Hgbb.findOne({ guildId: member.guild.id });
+        if (!config || !config.channelId) return;
 
-        const kanal = await member.guild.channels.fetch(kanalId).catch(() => null);
+        const kanal = member.guild.channels.cache.get(config.channelId) || await member.guild.channels.fetch(config.channelId).catch(() => null);
         if (!kanal) return;
 
-        const bbEmbed = {
-            color: 0xe74c3c,
-            title: '👋 Biri Aramızdan Ayrıldı...',
-            description: `Görüşürüz **${member.user.username}**! Toplam **${member.guild.memberCount}** kişi kaldık. 😢`,
-            thumbnail: { url: member.user.displayAvatarURL({ dynamic: true }) },
-            timestamp: new Date()
-        };
+        const bbEmbed = new EmbedBuilder()
+            .setColor('#e74c3c')
+            .setTitle('👋 Biri Aramızdan Ayrıldı...')
+            .setDescription(`Görüşürüz **${member.user.username}**! Toplam **${member.guild.memberCount}** kişi kaldık. 😢`)
+            .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+            .setTimestamp();
 
         await kanal.send({ embeds: [bbEmbed] });
+        console.log(`[HGBB BAŞARILI] ${member.user.tag} için bay bay mesajı atıldı.`);
     } catch (e) {
-        console.error('bb mesajı gönderme hatası:', e);
+        console.error('[HGBB ÇIKIŞ HATASI]', e);
     }
 });
 
 // --- 8. BOT GİRİŞ VE DİNAMİK DURUM (PRESENCE) AYARI ---
-client.once('ready', () => {
+client.once('ready', async () => {
+    await connectDB();
+
     console.log(`\n==================================================`);
     console.log(`[BOT AKTİF] ${client.user.tag} başarıyla başlatıldı!`);
     console.log(`==================================================\n`);
