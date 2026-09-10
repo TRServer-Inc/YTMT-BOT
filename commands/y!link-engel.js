@@ -2,7 +2,7 @@ const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const { LinkEngel } = require('../data/db.js');
 
 module.exports = {
-    name: 'y!link-engel',
+    name: 'link-engel',
     description: 'link engelleme sistemini açar veya kapatır.',
     async execute(message, args, client) {
         if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) {
