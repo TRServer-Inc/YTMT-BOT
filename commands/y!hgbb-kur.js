@@ -2,8 +2,8 @@ const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const { Hgbb } = require('../data/db.js');
 
 module.exports = {
-    name: 'y!hgbb-kur',
-    description: 'hoş geldin - bay bay kanalını ayarlar.',
+    name: 'hgbb-kur',
+    description: 'giriş çıkış kanalını ayarlar.',
     async execute(message, args, client) {
         if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) {
             return message.reply('bu komutu kullanmak için yönetici yetkisine sahip olmalısın kanka!');
