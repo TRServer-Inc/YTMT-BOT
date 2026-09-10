@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 
-// --- 1. MONGODB BAĞLANTISI VE MODELLER (data/db.js ÜZERİNDEN ÇEKİLİYOR) ---
+// --- 1. MONGODB BAĞLANTISI VE MODELLER ---
 if (process.env.MONGO_URI) {
     mongoose.connect(process.env.MONGO_URI)
         .then(() => console.log('[DATABASE] MongoDB bağlantısı başarıyla kuruldu! 🎉'))
@@ -15,7 +15,7 @@ if (process.env.MONGO_URI) {
     console.error('[DATABASE HATA] MONGO_URI .env dosyasında bulunamadı!');
 }
 
-const { Hgbb, LinkEngel } = require('./data/db.js');
+const { Hgbb, LinkEngel, MesajSayim, Uyari } = require('./data/db.js');
 
 // --- 2. BOT KURULUMU VE INTENTLER ---
 const client = new Client({
@@ -54,7 +54,8 @@ function kufurleriYukle() {
             kufurlerListesi = Array.isArray(parsed) ? parsed : (parsed.kufurler || []);
             console.log(`[SİSTEM] ${kufurlerListesi.length} adet küfür hafızaya yüklendi.`);
         } else {
-            console.log('[UYARI] data/kufurler.json dosyası bulunamadı!');
+            fs.writeFileSync(kufurlerPath, JSON.stringify([], null, 2));
+            console.log('[SİSTEM] data/kufurler.json oluşturuldu.');
         }
     } catch (e) {
         console.error('[HATA] data/kufurler.json okuma hatası:', e);
@@ -84,7 +85,7 @@ async function geminiCevapAl(soru) {
     const bodyPayload = {
         systemInstruction: {
             parts: [
-                { text: "Sen cana yakın, esprili, Roblox ve Minecraft oyunlarını çok iyi bilen fırlama bir Discord botusun. Lafı uzatmadan, kendini tekrar etmeden direkt olarak net, emojili ve kısa bir cevap ver." }
+                { text: "sen cana yakın, esprili, roblox ve minecraft oyunlarını çok iyi bilen fırlama bir discord botusun. lafı uzatmadan, kendini tekrar etmeden direkt olarak net, emojili ve kısa bir cevap ver." }
             ]
         },
         contents: [
@@ -125,6 +126,19 @@ client.on('messageCreate', async (message) => {
     const hamMesaj = message.content ? message.content.trim() : "";
     if (!hamMesaj) return;
 
+    // --- MONGODB MESAJ SAYIM SİSTEMİ ---
+    if (message.guild) {
+        try {
+            await MesajSayim.findOneAndUpdate(
+                { guildId: message.guild.id, userId: message.author.id },
+                { $inc: { count: 1 } },
+                { upsert: true, new: true }
+            );
+        } catch (err) {
+            console.error('[MESAJ SAYIM HATA]', err.message);
+        }
+    }
+
     // AFK Kontrolü
     const afkCommand = client.commands.get('afk') || client.commands.get('y!afk');
     if (afkCommand && afkCommand.afkMap) {
@@ -139,13 +153,13 @@ client.on('messageCreate', async (message) => {
                     await message.member.setNickname(eskiIsim);
                 }
             } catch (err) {
-                console.log('[AFK HATA] Rumuz sıfırlanamadı.');
+                console.log('[AFK HATA] rumuz sıfırlanamadı.');
             }
 
             const hosgeldinEmbed = new EmbedBuilder()
-                .setTitle('🎉 Hoş Geldin!')
+                .setTitle('🎉 hoş geldin!')
                 .setColor('#22c55e')
-                .setDescription(`Tekrardan hoş geldin **${message.author.username}**!\nArtık **AFK** değilsin.`)
+                .setDescription(`tekrardan hoş geldin **${message.author.username}**!\nartık **AFK** değilsin.`)
                 .setFooter({ text: 'AFK modundan çıkarıldın.' });
 
             message.reply({ embeds: [hosgeldinEmbed] });
@@ -158,9 +172,9 @@ client.on('messageCreate', async (message) => {
                     const dk = Math.floor((Date.now() - bilgi.zaman) / 1000 / 60);
 
                     const afkUyariEmbed = new EmbedBuilder()
-                        .setTitle('⚠️ Kullanıcı AFK')
+                        .setTitle('⚠️ kullanıcı AFK')
                         .setColor('#f59e0b')
-                        .setDescription(`Etiketlediğin **${user.username}** şu an AFK!\n\n**Sebep:** ${bilgi.sebep}\n**Süre:** ${dk > 0 ? `${dk} dakika önce` : 'az önce'} afk oldu.`);
+                        .setDescription(`etiketlediğin **${user.username}** şu an AFK!\n\n**sebep:** ${bilgi.sebep}\n**süre:** ${dk > 0 ? `${dk} dakika önce` : 'az önce'} afk oldu.`);
 
                     message.reply({ embeds: [afkUyariEmbed] });
                 }
