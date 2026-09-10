@@ -14,11 +14,10 @@ module.exports = {
             return message.reply('kullanım şekli: `y!uyarı <kaç_uyarı> <id_veya_etiket> <sebep>`\nörnek: `y!uyarı 2 @kullanıcı küfür`');
         }
 
-        // 2. İlk argüman sayı mı yoksa etiket/ID mi kontrol et
+        // 2. Argüman ayıklama (mühim kısım: sayı, etiket/id ve sebep)
         let uyariMiktari = parseInt(args[0]);
         let hedefIndex = 1;
 
-        // Eğer ilk argüman sayı değilse varsayılan 1 uyarı say ve hedefi 0. argümandan al
         if (isNaN(uyariMiktari) || uyariMiktari <= 0) {
             uyariMiktari = 1;
             hedefIndex = 0;
@@ -32,7 +31,7 @@ module.exports = {
         let hedefUye = message.mentions.members.first();
         let hedefUser = null;
 
-        // 3. Kullanıcıyı bul (etiket veya ID)
+        // 3. Kullanıcıyı bul
         if (hedefUye) {
             hedefUser = hedefUye.user;
         } else {
@@ -66,7 +65,7 @@ module.exports = {
             return message.reply('sunucu sahibini uyarmaya gücün yetmez kanka! 👑🛑');
         }
 
-        // 5. Hiyerarşi kontrolü
+        // 5. Rol hiyerarşisi
         if (hedefUye && message.author.id !== message.guild.ownerId) {
             const atanEnYuksekRol = message.member.roles.highest.position;
             const hedefEnYuksekRol = hedefUye.roles.highest.position;
@@ -76,10 +75,11 @@ module.exports = {
             }
         }
 
-        // Sebep toplama (Sayı girildiyse 2. indexten, girilmediyse 1. indexten başlar)
+        // Sebep alma
         const sebep = args.slice(hedefIndex + 1).join(' ') || 'sebep belirtilmedi';
 
         try {
+            // Önceki çalışan veritabanı kaydetme mantığı
             let kayit = await Uyari.findOne({ guildId: message.guild.id, userId: hedefUser.id });
             
             if (!kayit) {
