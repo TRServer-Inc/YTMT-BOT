@@ -20,7 +20,7 @@ module.exports = {
             return message.reply('lütfen geçerli bir uyarı miktarı gir kanka! Örnek: `y!uyarı 1 @kullanıcı sebep`');
         }
 
-        // 3. Kullanıcı bulma (20-21 haneli ID destekli)
+        // 3. Kullanıcı bulma (ID / Etiket)
         const hedefInput = args[1];
         let hedefUye = message.mentions.members.first();
         let hedefUser = null;
@@ -68,26 +68,28 @@ module.exports = {
             }
         }
 
-        // Sebep toplama (3. argümandan itibaren)
         const sebep = args.slice(2).join(' ') || 'sebep belirtilmedi';
 
         try {
-            // MongoDB Atomik Güncelleme ($inc ve $push) - 2. ve sonraki uyarılarda Asla Patlamaz
+            // Kaç tane uyarı verildiyse diziye o kadar 'sebep' ekleyelim
+            const eklenecekUyarilar = Array(uyariMiktari).fill(sebep);
+
+            // Veritabanındaki 'uyarilar' dizisine $push ile ekliyoruz
             const guncelKayit = await Uyari.findOneAndUpdate(
                 { guildId: message.guild.id, userId: hedefUser.id },
                 { 
-                    $inc: { count: uyariMiktari },
-                    $push: { reasons: sebep }
+                    $push: { uyarilar: { $each: eklenecekUyarilar } }
                 },
                 { new: true, upsert: true }
             );
 
             const sunucudaMiMesaj = hedefUye ? '' : ' *(Kullanıcı şu an sunucuda bulunmuyor, uyarı veritabanına işlendi)*';
+            const toplamSayi = guncelKayit.uyarilar ? guncelKayit.uyarilar.length : 0;
 
             const uyariEmbed = new EmbedBuilder()
                 .setColor('#f59e0b')
                 .setTitle('⚠️ kullanıcı uyarıldı!')
-                .setDescription(`<@${hedefUser.id}> (${hedefUser.tag}) kullanıcısına **+${uyariMiktari}** uyarı eklendi.${sunucudaMiMesaj}\n\n**uyaran:** ${message.author}\n**sebep:** ${sebep}\n**toplam uyarı:** ${guncelKayit.count}`)
+                .setDescription(`<@${hedefUser.id}> (${hedefUser.tag}) kullanıcısına **+${uyariMiktari}** uyarı eklendi.${sunucudaMiMesaj}\n\n**uyaran:** ${message.author}\n**sebep:** ${sebep}\n**toplam uyarı:** ${toplamSayi}`)
                 .setTimestamp();
 
             await message.channel.send({ embeds: [uyariEmbed] });
