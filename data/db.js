@@ -12,7 +12,7 @@ const linkEngelSchema = new mongoose.Schema({
     durum: { type: Boolean, default: false }
 });
 
-// 3. Mesaj Sayım Modeli (mesaj-sayim.json YERİNE)
+// 3. Mesaj Sayım Modeli
 const mesajSayimSchema = new mongoose.Schema({
     guildId: { type: String, required: true },
     userId: { type: String, required: true },
@@ -20,7 +20,7 @@ const mesajSayimSchema = new mongoose.Schema({
 });
 mesajSayimSchema.index({ guildId: 1, userId: 1 }, { unique: true });
 
-// 4. Uyarılar Modeli (uyarilar.json YERİNE)
+// 4. Uyarılar Modeli
 const uyariSchema = new mongoose.Schema({
     guildId: { type: String, required: true },
     userId: { type: String, required: true },
@@ -32,7 +32,7 @@ const uyariSchema = new mongoose.Schema({
 });
 uyariSchema.index({ guildId: 1, userId: 1 }, { unique: true });
 
-// Güvenli model exportları (Çakışmayı önler)
+// Güvenli Model Exportları (Çakışmayı %100 Önler)
 const Hgbb = mongoose.models.Hgbb || mongoose.model('Hgbb', hgbbSchema);
 const LinkEngel = mongoose.models.LinkEngel || mongoose.model('LinkEngel', linkEngelSchema);
 const MesajSayim = mongoose.models.MesajSayim || mongoose.model('MesajSayim', mesajSayimSchema);
