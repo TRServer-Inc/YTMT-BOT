@@ -1,33 +1,36 @@
-const { PermissionFlagsBits, EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const { Hgbb } = require('../data/db.js');
 
 module.exports = {
     name: 'y!hgbb-kur',
-    description: 'Hoş geldin - Bay bay kanalını ayarlar.',
+    description: 'hoş geldin - bay bay kanalını ayarlar.',
     async execute(message, args, client) {
         if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) {
-            return message.reply('❌ Bu komutu kullanmak için **Yönetici** yetkisine sahip olmalısın!');
+            return message.reply('bu komutu kullanmak için yönetici yetkisine sahip olmalısın kanka!');
         }
 
-        const targetChannel = message.mentions.channels.first() || message.channel;
+        const kanal = message.mentions.channels.first() || message.guild.channels.cache.get(args[0]);
+        if (!kanal) {
+            return message.reply('lütfen geçerli bir kanal etiketle kanka! Örn: `y!hgbb-kur #kanal`');
+        }
 
         try {
             await Hgbb.findOneAndUpdate(
                 { guildId: message.guild.id },
-                { channelId: targetChannel.id },
+                { channelId: kanal.id },
                 { upsert: true, new: true }
             );
 
             const embed = new EmbedBuilder()
-                .setTitle('✅ HGBB Kanalı Ayarlandı')
                 .setColor('#22c55e')
-                .setDescription(`Hoş geldin ve bay bay mesajları artık ${targetChannel} kanalına gönderilecek.\n*(Veri bulut veritabanına kaydedildi)*`)
+                .setTitle('✅ hg-bb kanalı ayarlandı')
+                .setDescription(`giriş-çıkış mesajları artık ${kanal} kanalına gönderilecek!`)
                 .setTimestamp();
 
-            return message.reply({ embeds: [embed] });
-        } catch (error) {
-            console.error('[HGBB-KUR HATASI]', error);
-            return message.reply('❌ Ayar kaydedilirken bir veritabanı hatası oluştu!');
+            await message.reply({ embeds: [embed] });
+        } catch (err) {
+            console.error('[HGBB-KUR HATA]', err);
+            await message.reply('veritabanına kaydedilirken bir sorun oluştu kanka!');
         }
     }
 };
