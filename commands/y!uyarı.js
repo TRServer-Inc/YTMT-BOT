@@ -10,28 +10,22 @@ module.exports = {
             return message.reply('bu komutu kullanmak için **Mesajları Yönet** yetkisine sahip olmalısın kanka! 🛑');
         }
 
-        if (!args[0]) {
+        // En az miktar ve etiket/ID girilmeli
+        if (!args[0] || !args[1]) {
             return message.reply('kullanım şekli: `y!uyarı <kaç_uyarı> <id_veya_etiket> <sebep>`\nörnek: `y!uyarı 2 @kullanıcı küfür`');
         }
 
-        // 2. Argüman ayıklama (mühim kısım: sayı, etiket/id ve sebep)
-        let uyariMiktari = parseInt(args[0]);
-        let hedefIndex = 1;
-
+        // 2. Miktar kontrolü
+        const uyariMiktari = parseInt(args[0]);
         if (isNaN(uyariMiktari) || uyariMiktari <= 0) {
-            uyariMiktari = 1;
-            hedefIndex = 0;
+            return message.reply('lütfen geçerli bir uyarı miktarı gir kanka! Örnek: `y!uyarı 1 @kullanıcı sebep`');
         }
 
-        const hedefInput = args[hedefIndex];
-        if (!hedefInput) {
-            return message.reply('lütfen uyarmak istediğin kullanıcıyı etiketle veya ID\'sini gir kanka!');
-        }
-
+        // 3. Kullanıcı bulma (2. argüman olan args[1] üzerinden)
+        const hedefInput = args[1];
         let hedefUye = message.mentions.members.first();
         let hedefUser = null;
 
-        // 3. Kullanıcıyı bul
         if (hedefUye) {
             hedefUser = hedefUye.user;
         } else {
@@ -65,7 +59,7 @@ module.exports = {
             return message.reply('sunucu sahibini uyarmaya gücün yetmez kanka! 👑🛑');
         }
 
-        // 5. Rol hiyerarşisi
+        // 5. Hiyerarşi kontrolü
         if (hedefUye && message.author.id !== message.guild.ownerId) {
             const atanEnYuksekRol = message.member.roles.highest.position;
             const hedefEnYuksekRol = hedefUye.roles.highest.position;
@@ -75,8 +69,8 @@ module.exports = {
             }
         }
 
-        // Sebep alma
-        const sebep = args.slice(hedefIndex + 1).join(' ') || 'sebep belirtilmedi';
+        // Sebep toplama (3. argümandan yani args[2]'den itibaren)
+        const sebep = args.slice(2).join(' ') || 'sebep belirtilmedi';
 
         try {
             // Önceki çalışan veritabanı kaydetme mantığı
