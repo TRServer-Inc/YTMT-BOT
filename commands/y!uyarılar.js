@@ -5,12 +5,10 @@ module.exports = {
     name: 'uyarılar',
     description: 'bir kullanıcının toplam uyarılarını ve sebeplerini gösterir.',
     async execute(message, args, client) {
-        // 1. Yetki kontrolü (Yönetici veya Mesajları Yönet yetkisi)
         if (!message.member.permissions.has(PermissionFlagsBits.ManageMessages) && message.author.id !== message.guild.ownerId) {
             return message.reply('bu komutu kullanmak için **Mesajları Yönet** yetkisine sahip olmalısın kanka! 🛑');
         }
 
-        // Eğer argüman girilmediyse komutu atan kişinin kendisine baksın, girildiyse o hedefi arasın
         const hedefInput = args[0];
         let hedefUye = message.mentions.members.first();
         let hedefUser = null;
@@ -39,24 +37,23 @@ module.exports = {
         }
 
         try {
-            // MongoDB'den kullanıcının uyarı kaydını çek
             const kayit = await Uyari.findOne({ guildId: message.guild.id, userId: hedefUser.id });
 
-            if (!kayit || !kayit.count || kayit.count === 0) {
+            // 'uyarilar' dizisi yoksa veya boşsa uyarmıyoruz
+            if (!kayit || !Array.isArray(kayit.uyarilar) || kayit.uyarilar.length === 0) {
                 return message.reply(`<@${hedefUser.id}> kullanıcısının hiç uyarısı yok kanka! 🥳`);
             }
 
-            // Sebepleri liste haline getir
-            const sebeplerListesi = Array.isArray(kayit.reasons) && kayit.reasons.length > 0
-                ? kayit.reasons.map((sebep, index) => `**${index + 1}.** ${sebep}`).join('\n')
-                : 'sebep kaydı bulunamadı.';
+            const sebeplerListesi = kayit.uyarilar
+                .map((sebep, index) => `**${index + 1}.** ${sebep}`)
+                .join('\n');
 
             const embed = new EmbedBuilder()
                 .setColor('#f59e0b')
                 .setTitle(`⚠️ ${hedefUser.tag} - Uyarı Geçmişi`)
                 .setDescription(`<@${hedefUser.id}> kullanıcısının veritabanındaki uyarı bilgileri:`)
                 .addFields(
-                    { name: '📊 Toplam Uyarı Sayısı', value: `\`${kayit.count}\``, inline: true },
+                    { name: '📊 Toplam Uyarı Sayısı', value: `\`${kayit.uyarilar.length}\``, inline: true },
                     { name: '📜 Uyarı Sebepleri', value: sebeplerListesi, inline: false }
                 )
                 .setThumbnail(hedefUser.displayAvatarURL({ dynamic: true }))
