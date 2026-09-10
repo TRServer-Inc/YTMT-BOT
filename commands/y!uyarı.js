@@ -5,23 +5,39 @@ module.exports = {
     name: 'uyarı',
     description: 'kullanıcıya belirtilen miktarda uyarı verir ve veritabanına kaydeder.',
     async execute(message, args, client) {
-        // 1. Yetki kontrolü
         if (!message.member.permissions.has(PermissionFlagsBits.ManageMessages) && message.author.id !== message.guild.ownerId) {
             return message.reply('bu komutu kullanmak için **Mesajları Yönet** yetkisine sahip olmalısın kanka! 🛑');
         }
 
         if (!args[0]) {
-            return message.reply('kullanım şekli: `y!uyarı <mektar> <id_veya_etiket> <sebep>` veya `y!uyarı <id_veya_etiket> <sebep>`');
+            return message.reply('kullanım şekli: `y!uyarı <miktar> <id_veya_etiket> <sebep>` veya `y!uyarı <id_veya_etiket> <sebep>`');
         }
 
-        // 2. Akıllı Argüman Kontrolü (Sayı var mı yok mu?)
-        let uyariMiktari = parseInt(args[0]);
-        let hedefIndex = 1;
+        // 2. Çok Akıllı Argüman ve Max 10 Kontrolü
+        let uyariMiktari = 1;
+        let hedefIndex = 0;
 
-        // İlk argüman bir sayı değilse, varsayılan olarak 1 uyarı say ve hedefi args[0] yap
-        if (isNaN(uyariMiktari) || uyariMiktari <= 0) {
+        const idRegex = /^\d{17,21}$/;
+        const mentionRegex = /^<@!?\d{17,21}>$/;
+
+        // Eğer ilk argüman direkt ID veya Etiket ise (yani sayı girilmemiş)
+        if (idRegex.test(args[0]) || mentionRegex.test(args[0])) {
             uyariMiktari = 1;
             hedefIndex = 0;
+        } else {
+            // İlk argüman ID/Etiket değilse, uyarı sayısı olmak zorundadır
+            const girilenSayi = parseInt(args[0]);
+            
+            if (isNaN(girilenSayi) || girilenSayi <= 0) {
+                return message.reply('lütfen geçerli bir uyarı miktarı (1-10 arası) gir veya direkt kullanıcıyı etiketle kanka!');
+            }
+            
+            if (girilenSayi > 10) {
+                return message.reply('yavaşşş! tek seferde en fazla **10** uyarı verebilirsin kanka. adamı mı katlediyon? 🛑');
+            }
+
+            uyariMiktari = girilenSayi;
+            hedefIndex = 1;
         }
 
         const hedefInput = args[hedefIndex];
@@ -29,14 +45,13 @@ module.exports = {
             return message.reply('lütfen uyarmak istediğin kullanıcıyı etiketle veya ID\'sini gir kanka!');
         }
 
-        // 3. Kullanıcı bulma (ID / Etiket)
+        // 3. Kullanıcı bulma
         let hedefUye = message.mentions.members.first();
         let hedefUser = null;
 
         if (hedefUye) {
             hedefUser = hedefUye.user;
         } else {
-            const idRegex = /^\d{17,21}$/;
             if (idRegex.test(hedefInput)) {
                 try {
                     hedefUye = await message.guild.members.fetch(hedefInput);
@@ -76,10 +91,11 @@ module.exports = {
             }
         }
 
-        // Sebep dinamik olarak sayı girildiyse 2, girilmediyse 1. indeksten başlar
+        // Sebep belirleme
         const sebepMetni = args.slice(hedefIndex + 1).join(' ') || 'sebep belirtilmedi';
 
         try {
+            // Şemandaki Obje yapısına tam uygun obje
             const yeniUyariObjesi = {
                 sebep: sebepMetni,
                 uyaran: message.author.id,
