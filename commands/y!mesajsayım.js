@@ -2,7 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 const { MesajSayim } = require('../data/db.js');
 
 module.exports = {
-    name: 'y!mesajsayım',
+    name: 'mesajsayım',
     description: 'sunucudaki toplam mesaj sayını gösterir.',
     async execute(message, args, client) {
         const hedef = message.mentions.users.first() || message.author;
