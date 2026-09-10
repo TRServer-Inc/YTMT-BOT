@@ -3,33 +3,37 @@ const { Uyari } = require('../data/db.js');
 
 module.exports = {
     name: 'uyarı',
-    description: 'kullanıcıya uyarı verir, 3 uyarıda the void rolü atar.',
+    description: 'kullanıcıya belirtilen miktarda uyarı verir ve veritabanına kaydeder.',
     async execute(message, args, client) {
-        // 1. Komutu atan kişinin yetkisi var mı? (Yönetici veya Mesajları Yönet yetkisi olmalı)
+        // 1. Yetki kontrolü
         if (!message.member.permissions.has(PermissionFlagsBits.ManageMessages) && message.author.id !== message.guild.ownerId) {
             return message.reply('bu komutu kullanmak için **Mesajları Yönet** yetkisine sahip olmalısın kanka! 🛑');
         }
 
-        const hedefInput = args[0];
-        if (!hedefInput) {
-            return message.reply('lütfen uyarmak istediğin kullanıcıyı etiketle veya ID\'sini gir kanka! Örnek: `y!uyarı @kullanıcı sebep` veya `y!uyarı 123456789012345678 sebep`');
+        if (!args[0] || !args[1]) {
+            return message.reply('kullanım şekli: `y!uyarı <kaç_uyarı> <id_veya_etiket> <sebep>`\nörnek: `y!uyarı 2 @kullanıcı küfür`');
         }
 
+        // 2. Miktar kontrolü
+        const uyariMiktari = parseInt(args[0]);
+        if (isNaN(uyariMiktari) || uyariMiktari <= 0) {
+            return message.reply('lütfen geçerli bir uyarı miktarı gir kanka! Örnek: `y!uyarı 1 @kullanıcı sebep`');
+        }
+
+        // 3. Kullanıcı bulma (20-21 haneli ID destekli)
+        const hedefInput = args[1];
         let hedefUye = message.mentions.members.first();
         let hedefUser = null;
 
-        // 2. Kullanıcıyı sunucuda veya global Discord ID üzerinden bul
         if (hedefUye) {
             hedefUser = hedefUye.user;
         } else {
-            const idRegex = /^\d{17,19}$/;
+            const idRegex = /^\d{17,21}$/;
             if (idRegex.test(hedefInput)) {
-                // Öncelik: Sunucudaki üyeyi bulmaya çalış
                 try {
                     hedefUye = await message.guild.members.fetch(hedefInput);
                     hedefUser = hedefUye.user;
                 } catch (e) {
-                    // Sunucuda yoksa global Discord kullanıcısı olarak çek
                     try {
                         hedefUser = await client.users.fetch(hedefInput);
                     } catch (err) {
@@ -41,22 +45,20 @@ module.exports = {
             }
         }
 
-        // 3. Kendini uyarmaya çalışıyorsa engelle
+        // 4. Korumalar
         if (hedefUser.id === message.author.id) {
             return message.reply('kendine uyarı veremezsin kanka! 😂');
         }
 
-        // 4. Botu uyarmaya çalışıyorsa engelle
         if (hedefUser.bot) {
             return message.reply('botları uyaramazsın kanka!');
         }
 
-        // 5. Sunucu sahibini uyarmaya çalışıyorsa engelle
         if (hedefUser.id === message.guild.ownerId) {
             return message.reply('sunucu sahibini uyarmaya gücün yetmez kanka! 👑🛑');
         }
 
-        // 6. Rol hiyerarşi kontrolü (Sadece kullanıcı sunucudaysa yapılır)
+        // 5. Hiyerarşi kontrolü
         if (hedefUye && message.author.id !== message.guild.ownerId) {
             const atanEnYuksekRol = message.member.roles.highest.position;
             const hedefEnYuksekRol = hedefUye.roles.highest.position;
@@ -66,61 +68,32 @@ module.exports = {
             }
         }
 
-        // Sebep kontrolü
-        const sebep = args.slice(1).join(' ') || 'sebep belirtilmedi';
+        // Sebep toplama (3. argümandan itibaren)
+        const sebep = args.slice(2).join(' ') || 'sebep belirtilmedi';
 
         try {
-            // MongoDB kaydı güncelle/oluştur
-            let kayit = await Uyari.findOne({ guildId: message.guild.id, userId: hedefUser.id });
-            
-            if (!kayit) {
-                kayit = new Uyari({
-                    guildId: message.guild.id,
-                    userId: hedefUser.id,
-                    count: 1,
-                    reasons: [sebep]
-                });
-            } else {
-                kayit.count += 1;
-                kayit.reasons.push(sebep);
-            }
-
-            await kayit.save();
+            // MongoDB Atomik Güncelleme ($inc ve $push) - 2. ve sonraki uyarılarda Asla Patlamaz
+            const guncelKayit = await Uyari.findOneAndUpdate(
+                { guildId: message.guild.id, userId: hedefUser.id },
+                { 
+                    $inc: { count: uyariMiktari },
+                    $push: { reasons: sebep }
+                },
+                { new: true, upsert: true }
+            );
 
             const sunucudaMiMesaj = hedefUye ? '' : ' *(Kullanıcı şu an sunucuda bulunmuyor, uyarı veritabanına işlendi)*';
 
             const uyariEmbed = new EmbedBuilder()
                 .setColor('#f59e0b')
                 .setTitle('⚠️ kullanıcı uyarıldı!')
-                .setDescription(`<@${hedefUser.id}> (${hedefUser.tag}) kullanıcısına uyarı verildi.${sunucudaMiMesaj}\n\n**uyaran:** ${message.author}\n**sebep:** ${sebep}\n**toplam uyarı:** ${kayit.count}/3`)
+                .setDescription(`<@${hedefUser.id}> (${hedefUser.tag}) kullanıcısına **+${uyariMiktari}** uyarı eklendi.${sunucudaMiMesaj}\n\n**uyaran:** ${message.author}\n**sebep:** ${sebep}\n**toplam uyarı:** ${guncelKayit.count}`)
                 .setTimestamp();
 
             await message.channel.send({ embeds: [uyariEmbed] });
 
-            // 3. Uyarıya ulaştıysa "🛑 The Void" rolü ver (Sadece sunucudaysa rol verilebilir)
-            if (kayit.count >= 3) {
-                if (hedefUye) {
-                    const voidRol = message.guild.roles.cache.find(r => r.name === '🛑 The Void');
-                    if (voidRol) {
-                        await hedefUye.roles.add(voidRol).catch(err => console.error('[VOID ROL HATA]', err));
-                        
-                        const voidEmbed = new EmbedBuilder()
-                            .setColor('#ff0000')
-                            .setTitle('🛑 the void katmanına gönderildi!')
-                            .setDescription(`${hedefUye} 3 uyarıya ulaştığı için **The Void** rolü verilerek susturuldu!`)
-                            .setTimestamp();
-
-                        await message.channel.send({ embeds: [voidEmbed] });
-                    } else {
-                        await message.channel.send('⚠️ kullanıcı 3 uyarıya ulaştı ama sunucuda **🛑 The Void** rolü bulunamadı!');
-                    }
-                } else {
-                    await message.channel.send('⚠️ kullanıcı 3 uyarıya ulaştı ama sunucuda olmadığı için **The Void** rolü verilemedi!');
-                }
-            }
-
         } catch (err) {
-            console.error('[UYARI KOMUT HATA]', err);
+            console.error('[UYARI KOMUT HATA DETAILS]:', err);
             return message.reply('uyarı verilirken veritabanı hatası oluştu kanka!');
         }
     }
