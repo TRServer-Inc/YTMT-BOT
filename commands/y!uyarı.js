@@ -3,38 +3,33 @@ const { Uyari } = require('../data/db.js');
 
 module.exports = {
     name: 'uyarı',
-    description: 'kullanıcıya belirtilen miktarda uyarı verir ve veritabanına kaydeder.',
+    description: 'kullanıcıya uyarı verir ve veritabanına kaydeder.',
     async execute(message, args, client) {
-        // 1. Yetki kontrolü
+        // 1. Komutu atan kişinin yetkisi var mı? (Yönetici veya Mesajları Yönet yetkisi olmalı)
         if (!message.member.permissions.has(PermissionFlagsBits.ManageMessages) && message.author.id !== message.guild.ownerId) {
             return message.reply('bu komutu kullanmak için **Mesajları Yönet** yetkisine sahip olmalısın kanka! 🛑');
         }
 
-        // En az miktar ve etiket/ID girilmeli
-        if (!args[0] || !args[1]) {
-            return message.reply('kullanım şekli: `y!uyarı <kaç_uyarı> <id_veya_etiket> <sebep>`\nörnek: `y!uyarı 2 @kullanıcı küfür`');
+        const hedefInput = args[0];
+        if (!hedefInput) {
+            return message.reply('lütfen uyarmak istediğin kullanıcıyı etiketle veya ID\'sini gir kanka! Örnek: `y!uyarı @kullanıcı sebep` veya `y!uyarı 123456789012345678 sebep`');
         }
 
-        // 2. Miktar kontrolü
-        const uyariMiktari = parseInt(args[0]);
-        if (isNaN(uyariMiktari) || uyariMiktari <= 0) {
-            return message.reply('lütfen geçerli bir uyarı miktarı gir kanka! Örnek: `y!uyarı 1 @kullanıcı sebep`');
-        }
-
-        // 3. Kullanıcı bulma (2. argüman olan args[1] üzerinden)
-        const hedefInput = args[1];
         let hedefUye = message.mentions.members.first();
         let hedefUser = null;
 
+        // 2. Kullanıcıyı sunucuda veya global Discord ID üzerinden bul
         if (hedefUye) {
             hedefUser = hedefUye.user;
         } else {
             const idRegex = /^\d{17,19}$/;
             if (idRegex.test(hedefInput)) {
+                // Öncelik: Sunucudaki üyeyi bulmaya çalış
                 try {
                     hedefUye = await message.guild.members.fetch(hedefInput);
                     hedefUser = hedefUye.user;
                 } catch (e) {
+                    // Sunucuda yoksa global Discord kullanıcısı olarak çek
                     try {
                         hedefUser = await client.users.fetch(hedefInput);
                     } catch (err) {
@@ -46,20 +41,22 @@ module.exports = {
             }
         }
 
-        // 4. Korumalar
+        // 3. Kendini uyarmaya çalışıyorsa engelle
         if (hedefUser.id === message.author.id) {
             return message.reply('kendine uyarı veremezsin kanka! 😂');
         }
 
+        // 4. Botu uyarmaya çalışıyorsa engelle
         if (hedefUser.bot) {
             return message.reply('botları uyaramazsın kanka!');
         }
 
+        // 5. Sunucu sahibini uyarmaya çalışıyorsa engelle
         if (hedefUser.id === message.guild.ownerId) {
             return message.reply('sunucu sahibini uyarmaya gücün yetmez kanka! 👑🛑');
         }
 
-        // 5. Hiyerarşi kontrolü
+        // 6. Rol hiyerarşi kontrolü (Sadece kullanıcı sunucudaysa yapılır)
         if (hedefUye && message.author.id !== message.guild.ownerId) {
             const atanEnYuksekRol = message.member.roles.highest.position;
             const hedefEnYuksekRol = hedefUye.roles.highest.position;
@@ -69,22 +66,22 @@ module.exports = {
             }
         }
 
-        // Sebep toplama (3. argümandan yani args[2]'den itibaren)
-        const sebep = args.slice(2).join(' ') || 'sebep belirtilmedi';
+        // Sebep kontrolü
+        const sebep = args.slice(1).join(' ') || 'sebep belirtilmedi';
 
         try {
-            // Önceki çalışan veritabanı kaydetme mantığı
+            // MongoDB kaydı güncelle/oluştur
             let kayit = await Uyari.findOne({ guildId: message.guild.id, userId: hedefUser.id });
             
             if (!kayit) {
                 kayit = new Uyari({
                     guildId: message.guild.id,
                     userId: hedefUser.id,
-                    count: uyariMiktari,
+                    count: 1,
                     reasons: [sebep]
                 });
             } else {
-                kayit.count += uyariMiktari;
+                kayit.count += 1;
                 kayit.reasons.push(sebep);
             }
 
@@ -95,7 +92,7 @@ module.exports = {
             const uyariEmbed = new EmbedBuilder()
                 .setColor('#f59e0b')
                 .setTitle('⚠️ kullanıcı uyarıldı!')
-                .setDescription(`<@${hedefUser.id}> (${hedefUser.tag}) kullanıcısına **+${uyariMiktari}** uyarı eklendi.${sunucudaMiMesaj}\n\n**uyaran:** ${message.author}\n**sebep:** ${sebep}\n**toplam uyarı:** ${kayit.count}`)
+                .setDescription(`<@${hedefUser.id}> (${hedefUser.tag}) kullanıcısına uyarı verildi.${sunucudaMiMesaj}\n\n**uyaran:** ${message.author}\n**sebep:** ${sebep}\n**toplam uyarı:** ${kayit.count}`)
                 .setTimestamp();
 
             await message.channel.send({ embeds: [uyariEmbed] });
