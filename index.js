@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 
-// --- 1. MONGODB BAĞLANTISI VE ŞEMALAR ---
+// --- 1. MONGODB BAĞLANTISI VE ŞEMALAR (SİLMEDEN, OVERWRITE HATASINI ÖNLEYEREK) ---
 if (process.env.MONGO_URI) {
     mongoose.connect(process.env.MONGO_URI)
         .then(() => console.log('[DATABASE] MongoDB bağlantısı başarıyla kuruldu! 🎉'))
@@ -15,19 +15,19 @@ if (process.env.MONGO_URI) {
     console.error('[DATABASE HATA] MONGO_URI .env dosyasında bulunamadı!');
 }
 
-// HGBB Şeması
+// HGBB Şeması (Zaten tanımlıysa var olanı kullanır, çökmez)
 const hgbbSchema = new mongoose.Schema({
     guildId: { type: String, required: true, unique: true },
     channelId: { type: String, required: true }
 });
-const Hgbb = mongoose.model('Hgbb', hgbbSchema);
+const Hgbb = mongoose.models.Hgbb || mongoose.model('Hgbb', hgbbSchema);
 
-// Link Engel Şeması (MongoDB Tabanlı)
+// Link Engel Şeması (Zaten tanımlıysa var olanı kullanır, çökmez)
 const linkEngelSchema = new mongoose.Schema({
     guildId: { type: String, required: true, unique: true },
     durum: { type: Boolean, default: false }
 });
-const LinkEngel = mongoose.model('LinkEngel', linkEngelSchema);
+const LinkEngel = mongoose.models.LinkEngel || mongoose.model('LinkEngel', linkEngelSchema);
 
 // --- 2. BOT KURULUMU VE INTENTLER ---
 const client = new Client({
