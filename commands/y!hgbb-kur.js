@@ -1,44 +1,33 @@
-const { PermissionsBitField, ChannelType } = require('discord.js');
-const fs = require('fs');
-const path = require('path');
-
-const configPath = path.join(process.cwd(), 'hgbb-config.json');
+const { PermissionFlagsBits, EmbedBuilder } = require('discord.js');
+const { Hgbb } = require('../data/db.js');
 
 module.exports = {
-    name: 'hgbb-kur',
-    description: 'hoş geldin & bay bay kanalını ayarlar.',
+    name: 'y!hgbb-kur',
+    description: 'Hoş geldin - Bay bay kanalını ayarlar.',
     async execute(message, args, client) {
-        // yetki kontrolü (sadece yönetici kullanabilir)
-        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return message.reply('kanka bu komutu kullanmak için `yönetici` yetkisine sahip olman lazım!');
+        if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) {
+            return message.reply('❌ Bu komutu kullanmak için **Yönetici** yetkisine sahip olmalısın!');
         }
 
-        // kanal etiketlendi mi kontrol et
-        const kanal = message.mentions.channels.first();
-        if (!kanal || kanal.type !== ChannelType.GuildText) {
-            return message.reply('lütfen geçerli bir yazı kanalı etiketle! örnek: `y!hgbb-kur #hoşgeldin`');
-        }
+        const targetChannel = message.mentions.channels.first() || message.channel;
 
-        // mevcut ayarları oku veya yeni obje oluştur
-        let hgbbAyarlari = {};
-        if (fs.existsSync(configPath)) {
-            try {
-                hgbbAyarlari = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-            } catch (e) {
-                hgbbAyarlari = {};
-            }
-        }
-
-        // sunucu id'sine göre kanalı kaydet
-        hgbbAyarlari[message.guild.id] = kanal.id;
-
-        // json dosyasına yaz
         try {
-            fs.writeFileSync(configPath, JSON.stringify(hgbbAyarlari, null, 4));
-            return message.reply(`harika! hg-bb bildirim kanalı başarıyla ${kanal} olarak ayarlandı. 🎉`);
+            await Hgbb.findOneAndUpdate(
+                { guildId: message.guild.id },
+                { channelId: targetChannel.id },
+                { upsert: true, new: true }
+            );
+
+            const embed = new EmbedBuilder()
+                .setTitle('✅ HGBB Kanalı Ayarlandı')
+                .setColor('#22c55e')
+                .setDescription(`Hoş geldin ve bay bay mesajları artık ${targetChannel} kanalına gönderilecek.\n*(Veri bulut veritabanına kaydedildi)*`)
+                .setTimestamp();
+
+            return message.reply({ embeds: [embed] });
         } catch (error) {
-            console.error('hgbb kaydetme hatası:', error);
-            return message.reply('ayarlar kaydedilirken bir hata oluştu kanka!');
+            console.error('[HGBB-KUR HATASI]', error);
+            return message.reply('❌ Ayar kaydedilirken bir veritabanı hatası oluştu!');
         }
     }
 };
