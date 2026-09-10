@@ -2,7 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 const { Uyari } = require('../data/db.js');
 
 module.exports = {
-    name: 'y!uyarılar',
+    name: 'uyarılar',
     description: 'bir kullanıcının uyarı geçmişini listeler.',
     async execute(message, args, client) {
         const hedef = message.mentions.users.first() || message.author;
