@@ -14,6 +14,21 @@ module.exports = {
             return message.reply('lütfen uyarılacak kişiyi etiketle kanka! Örn: `y!uyarı @kullanici sebep`');
         }
 
+        // 1. kendi kendine uyarı atmasını engelle
+        if (hedef.id === message.author.id) {
+            return message.reply('kendine uyarı atamazsın kanka, o kadar da değil! 😂');
+        }
+
+        // 2. sunucu sahibine uyarı atılmasını engelle
+        if (hedef.id === message.guild.ownerId) {
+            return message.reply('sunucu sahibine uyarı atamazsın kanka!');
+        }
+
+        // 3. yönetici yetkisi olanlara uyarı atılmasını engelle
+        if (hedef.permissions.has(PermissionFlagsBits.Administrator)) {
+            return message.reply('yönetici yetkisine sahip birine uyarı atamazsın kanka!');
+        }
+
         const sebep = args.slice(1).join(' ') || 'sebep belirtilmedi';
 
         try {
