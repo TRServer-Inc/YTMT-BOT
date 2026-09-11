@@ -1,6 +1,4 @@
-const Parser = require('rss-parser');
 const axios = require('axios');
-const parser = new Parser();
 const { YtBildirim } = require('../data/db.js');
 const { EmbedBuilder } = require('discord.js');
 
@@ -21,7 +19,7 @@ async function getChannelIdFromUrl(url) {
 }
 
 function startYtChecker(client) {
-    // Her 3 dakikada bir kontrol eder (180000 ms)
+    // 3 dakikada bir otomatik kontrol eder
     setInterval(async () => {
         try {
             const kayitlar = await YtBildirim.find({});
@@ -30,7 +28,6 @@ function startYtChecker(client) {
             for (const kayit of kayitlar) {
                 let channelId = kayit.ytChannelId;
 
-                // Kanal ID veritabanında yoksa URL'den otomatik çekip kaydeder
                 if (!channelId) {
                     channelId = await getChannelIdFromUrl(kayit.ytUrl);
                     if (channelId) {
@@ -41,45 +38,53 @@ function startYtChecker(client) {
                     }
                 }
 
-                // YouTube RSS Beslemesi
+                // YouTube RSS verisini axios ile çekiyoruz
                 const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
-                const feed = await parser.parseURL(feedUrl).catch(() => null);
+                const response = await axios.get(feedUrl, { timeout: 5000 }).catch(() => null);
 
-                if (!feed || !feed.items || feed.items.length === 0) continue;
+                if (!response || !response.data) continue;
 
-                const sonIcerik = feed.items[0]; // En son yüklenen içerik
-                const videoId = sonIcerik.id.replace('yt:video:', '');
+                const xmlData = response.data;
 
-                // Eğer zaten bildirim atılmış bir video ise atla
+                // Regex ile XML Ayrıştırma (Paketsiz)
+                const videoIdMatch = xmlData.match(/<yt:videoId>(.*?)<\/yt:videoId>/);
+                const titleMatch = xmlData.match(/<title>(.*?)<\/title>/g);
+                const linkMatch = xmlData.match(/<link rel="alternate" href="(.*?)"\/>/);
+
+                if (!videoIdMatch || !titleMatch || titleMatch.length < 2) continue;
+
+                const videoId = videoIdMatch[1];
+                const videoTitle = titleMatch[1].replace('<title>', '').replace('</title>', '');
+                const videoLink = linkMatch ? linkMatch[1] : `https://www.youtube.com/watch?v=${videoId}`;
+
+                // Eğer bu video zaten atıldıysa pas geç
                 if (kayit.sonVideoId === videoId) continue;
 
                 const discordKanal = client.channels.cache.get(kayit.channelId);
                 if (!discordKanal) continue;
 
-                const isLive = sonIcerik.link.includes('live') || (sonIcerik.title && sonIcerik.title.toLowerCase().includes('canlı'));
+                const isLive = videoTitle.toLowerCase().includes('canlı') || videoTitle.toLowerCase().includes('live');
 
-                // Bildirim Tipi Filtresi
                 if (kayit.tip === 'video' && isLive) continue;
                 if (kayit.tip === 'yayin' && !isLive) continue;
 
                 const embed = new EmbedBuilder()
                     .setColor('#ff0000')
-                    .setTitle(sonIcerik.title)
-                    .setURL(sonIcerik.link)
-                    .setAuthor({ name: sonIcerik.author || 'YouTube' })
+                    .setTitle(videoTitle)
+                    .setURL(videoLink)
                     .setImage(`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`)
-                    .setTimestamp(new Date(sonIcerik.pubDate));
+                    .setTimestamp();
 
                 await discordKanal.send({ content: kayit.mesaj, embeds: [embed] });
 
-                // Son bildirimi veritabanına kaydet ki tekrar atmasın
+                // Son videoyu veritabanına kaydet
                 kayit.sonVideoId = videoId;
                 await kayit.save();
             }
         } catch (err) {
             console.error('[YT CHECKER HATA]:', err);
         }
-    }, 180000); 
+    }, 180000);
 }
 
 module.exports = { startYtChecker };
