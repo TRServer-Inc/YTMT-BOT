@@ -32,7 +32,7 @@ module.exports = {
         }
 
         try {
-            const guncelKayit = await YtBildirim.findOneAndUpdate(
+            await YtBildirim.findOneAndUpdate(
                 { guildId: String(message.guild.id), ytUrl: ytUrl },
                 {
                     guildId: String(message.guild.id),
