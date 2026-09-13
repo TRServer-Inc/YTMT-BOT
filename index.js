@@ -78,15 +78,15 @@ if (fs.existsSync(commandsPath)) {
     }
 }
 
-// --- YAPAY ZEKA SORGULAMA FONKSİYONU (DÜZELTİLEN KISIM) ---
+// --- YAPAY ZEKA SORGULAMA FONKSİYONU (AXIOS UYUMLU ENDPOINT) ---
 async function geminiCevapAl(soru) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
         throw new Error("GEMINI_API_KEY bulunamadı!");
     }
 
-    // Kararlı v1 endpoint'i ve uyumlu model adresi
-    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // Google Gemini v1beta endpoint adresi
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`;
 
     const bodyPayload = {
         contents: [
@@ -101,7 +101,10 @@ async function geminiCevapAl(soru) {
     };
 
     const response = await axios.post(url, bodyPayload, {
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey
+        },
         timeout: 15000
     });
 
@@ -214,7 +217,7 @@ client.on('messageCreate', async (message) => {
             }
             if (error.response && error.response.status === 404) {
                 console.error('Gemini API 404 Hatası:', error.response.data);
-                return message.reply('api model adresi 404 hatası verdi kanka, yetkiliyle iletişime geç!');
+                return message.reply('api model adresi 404 hatası verdi kanka, model ismini kontrol et!');
             }
             console.error('DM Yapay Zeka Hatası:', error.message);
             return message.reply('api bağlantısında ufak bir takılma oldu kanka, bir daha yazsana!');
