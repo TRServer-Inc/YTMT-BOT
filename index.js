@@ -85,7 +85,6 @@ async function geminiCevapAl(soru) {
         throw new Error("GEMINI_API_KEY bulunamadı!");
     }
 
-    // gemini-1.5-flash-latest veya gemini-1.5-flash-001 kullanımı 404 hatasını çözer
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent`;
 
     const bodyPayload = {
