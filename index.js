@@ -5,6 +5,7 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
+const { startYtChecker } = require('./services/ytChecker.js');
 
 // --- 1. MONGODB BAĞLANTISI VE MODELLER ---
 if (process.env.MONGO_URI) {
@@ -15,7 +16,7 @@ if (process.env.MONGO_URI) {
     console.error('[DATABASE HATA] MONGO_URI .env dosyasında bulunamadı!');
 }
 
-const { Hgbb, LinkEngel, MesajSayim, Uyari } = require('./data/db.js');
+const { Hgbb, LinkEngel, MesajSayim, Uyari, YtBildirim } = require('./data/db.js');
 
 // --- 2. BOT KURULUMU VE INTENTLER ---
 const client = new Client({
@@ -77,21 +78,17 @@ if (fs.existsSync(commandsPath)) {
     }
 }
 
-// --- YAPAY ZEKA SORGULAMA FONKSİYONU ---
+// --- YAPAY ZEKA SORGULAMA FONKSİYONU (DÜZELTİLDİ) ---
 async function geminiCevapAl(soru) {
     const apiKey = process.env.GEMINI_API_KEY;
+    // v1beta endpoint ve doğru model url formatı
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const bodyPayload = {
-        systemInstruction: {
-            parts: [
-                { text: "sen cana yakın, esprili, roblox ve minecraft oyunlarını çok iyi bilen fırlama bir discord botusun. lafı uzatmadan, kendini tekrar etmeden direkt olarak net, emojili ve kısa bir cevap ver." }
-            ]
-        },
         contents: [
             {
                 role: "user",
-                parts: [{ text: soru }]
+                parts: [{ text: `sen cana yakın, esprili, roblox ve minecraft oyunlarını çok iyi bilen fırlama bir discord botusun. lafı uzatmadan, kendini tekrar etmeden direkt olarak net, emojili ve kısa bir cevap ver. Kullanıcının sorusu: ${soru}` }]
             }
         ]
     };
@@ -220,7 +217,6 @@ client.on('messageCreate', async (message) => {
         const args = hamMesaj.slice(2).trim().split(/ +/);
         const commandName = args.shift().toLowerCase();
 
-        // Hem y!komutAdi hem de komutAdi isimleriyle eşleşme kontrolü yapıyoruz
         const command = client.commands.get(`y!${commandName}`) || client.commands.get(commandName);
         if (command && typeof command.execute === 'function') {
             try {
@@ -411,6 +407,9 @@ client.once('ready', () => {
     console.log(`\n==================================================`);
     console.log(`[BOT AKTİF] ${client.user.tag} başarıyla başlatıldı!`);
     console.log(`==================================================\n`);
+
+    // YouTube Otomatik Bildirim Kontrolcüsünü Başlat
+    startYtChecker(client);
 
     const durumlar = [
         { name: 'dm\'den gelen soruları dinliyor...', type: ActivityType.Listening },
