@@ -78,14 +78,15 @@ if (fs.existsSync(commandsPath)) {
     }
 }
 
-// --- YAPAY ZEKA SORGULAMA FONKSİYONU (GÜNCELLENDİ) ---
+// --- YAPAY ZEKA SORGULAMA FONKSİYONU (DÜZELTİLEN KISIM) ---
 async function geminiCevapAl(soru) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
         throw new Error("GEMINI_API_KEY bulunamadı!");
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // Kararlı v1 endpoint'i ve uyumlu model adresi
+    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const bodyPayload = {
         contents: [
