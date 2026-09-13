@@ -78,17 +78,23 @@ if (fs.existsSync(commandsPath)) {
     }
 }
 
-// --- YAPAY ZEKA SORGULAMA FONKSİYONU (DÜZELTİLDİ) ---
+// --- YAPAY ZEKA SORGULAMA FONKSİYONU (GÜNCELLENDİ) ---
 async function geminiCevapAl(soru) {
     const apiKey = process.env.GEMINI_API_KEY;
-    // v1beta endpoint ve doğru model url formatı
+    if (!apiKey) {
+        throw new Error("GEMINI_API_KEY bulunamadı!");
+    }
+
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const bodyPayload = {
         contents: [
             {
-                role: "user",
-                parts: [{ text: `sen cana yakın, esprili, roblox ve minecraft oyunlarını çok iyi bilen fırlama bir discord botusun. lafı uzatmadan, kendini tekrar etmeden direkt olarak net, emojili ve kısa bir cevap ver. Kullanıcının sorusu: ${soru}` }]
+                parts: [
+                    {
+                        text: `sen cana yakın, esprili, roblox ve minecraft oyunlarını çok iyi bilen fırlama bir discord botusun. lafı uzatmadan, kendini tekrar etmeden direkt olarak net, emojili ve kısa bir cevap ver. Soru: ${soru}`
+                    }
+                ]
             }
         ]
     };
@@ -204,6 +210,10 @@ client.on('messageCreate', async (message) => {
         } catch (error) {
             if (error.response && error.response.status === 429) {
                 return message.reply('kanka api biraz yoruldu, 15-20 saniye soluklanıp öyle yaz! 😅');
+            }
+            if (error.response && error.response.status === 404) {
+                console.error('Gemini API 404 Hatası:', error.response.data);
+                return message.reply('api model adresi 404 hatası verdi kanka, yetkiliyle iletişime geç!');
             }
             console.error('DM Yapay Zeka Hatası:', error.message);
             return message.reply('api bağlantısında ufak bir takılma oldu kanka, bir daha yazsana!');
@@ -351,6 +361,10 @@ client.on('messageCreate', async (message) => {
         } catch (error) {
             if (error.response && error.response.status === 429) {
                 return message.reply('kanka api biraz yoruldu, 15-20 saniye soluklanıp öyle yaz! 😅');
+            }
+            if (error.response && error.response.status === 404) {
+                console.error('Gemini API 404 Hatası:', error.response.data);
+                return message.reply('api model adresi 404 hatası verdi kanka, yetkiliyle iletişime geç!');
             }
             console.error('Yapay Zeka Hatası Detayı:', error.message);
             return message.reply('api bağlantısında ufak bir takılma oldu kanka, bir daha yazsana!');
