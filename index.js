@@ -78,15 +78,15 @@ if (fs.existsSync(commandsPath)) {
     }
 }
 
-// --- YAPAY ZEKA SORGULAMA FONKSİYONU (AXIOS UYUMLU ENDPOINT) ---
+// --- YAPAY ZEKA SORGULAMA FONKSİYONU ---
 async function geminiCevapAl(soru) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
         throw new Error("GEMINI_API_KEY bulunamadı!");
     }
 
-    // Google Gemini v1beta endpoint adresi
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`;
+    // gemini-1.5-flash-latest veya gemini-1.5-flash-001 kullanımı 404 hatasını çözer
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent`;
 
     const bodyPayload = {
         contents: [
